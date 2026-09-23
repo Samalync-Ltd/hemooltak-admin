@@ -3,30 +3,39 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { StatusBadge } from '../../../components/common/StatusBadge';
-import { getShipments } from '../../../admin/mock/shipments';
-import { SHIPMENT_STATUS } from '../../../admin/mock/constants';
+import { getShipments } from '../../../services/firebaseAdmin';
+import { ShipmentStatus } from '../../../constants/enums';
+
+const FILTERS = [
+  { value: 'ALL', label: 'الكل' },
+  { value: ShipmentStatus.PENDING_OFFERS, label: 'بانتظار العروض' },
+  { value: ShipmentStatus.NEGOTIATING, label: 'قيد التفاوض' },
+  { value: ShipmentStatus.ACTIVE, label: 'نشطة' },
+  { value: ShipmentStatus.COMPLETED, label: 'مكتملة' },
+  { value: ShipmentStatus.CANCELLED, label: 'ملغاة' },
+];
 
 export const ShipmentsList = () => {
   const [shipments, setShipments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [filter, setFilter] = useState('ALL');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    loadShipments();
-  }, []);
-
   const loadShipments = async () => {
     setLoading(true);
+    setError('');
     try {
-      const data = await getShipments();
-      setShipments(data);
+      setShipments(await getShipments());
     } catch (err) {
       console.error(err);
+      setError(err.message || 'تعذر تحميل الشحنات');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => { loadShipments(); }, []);
 
   const filteredShipments = shipments.filter(s => filter === 'ALL' || s.status === filter);
 
@@ -34,20 +43,20 @@ export const ShipmentsList = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ margin: 0 }}>الشحنات</h2>
+        <Button variant="outline" onClick={loadShipments}>تحديث</Button>
       </div>
 
       <Card>
         <div style={{ display: 'flex', gap: 8, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}>
-          <Button variant={filter === 'ALL' ? 'primary' : 'outline'} onClick={() => setFilter('ALL')}>الكل</Button>
-          <Button variant={filter === SHIPMENT_STATUS.AWAITING_OFFERS ? 'primary' : 'outline'} onClick={() => setFilter(SHIPMENT_STATUS.AWAITING_OFFERS)}>بانتظار العروض</Button>
-          <Button variant={filter === SHIPMENT_STATUS.NEGOTIATING ? 'primary' : 'outline'} onClick={() => setFilter(SHIPMENT_STATUS.NEGOTIATING)}>قيد التفاوض</Button>
-          <Button variant={filter === SHIPMENT_STATUS.ACTIVE ? 'primary' : 'outline'} onClick={() => setFilter(SHIPMENT_STATUS.ACTIVE)}>نشطة</Button>
-          <Button variant={filter === SHIPMENT_STATUS.COMPLETED ? 'primary' : 'outline'} onClick={() => setFilter(SHIPMENT_STATUS.COMPLETED)}>مكتملة</Button>
-          <Button variant={filter === SHIPMENT_STATUS.CANCELLED ? 'primary' : 'outline'} onClick={() => setFilter(SHIPMENT_STATUS.CANCELLED)}>ملغاة</Button>
+          {FILTERS.map(f => (
+            <Button key={f.value} variant={filter === f.value ? 'primary' : 'outline'} onClick={() => setFilter(f.value)}>{f.label}</Button>
+          ))}
         </div>
 
         {loading ? (
           <div style={{ padding: 24, textAlign: 'center' }}>جاري التحميل...</div>
+        ) : error ? (
+          <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-error)' }}>{error}</div>
         ) : filteredShipments.length === 0 ? (
           <div style={{ padding: 48, textAlign: 'center', color: 'var(--color-text-muted)' }}>
             لا توجد شحنات مطابقة للفلتر المحدد
@@ -60,6 +69,7 @@ export const ShipmentsList = () => {
                   <th style={{ padding: '12px 16px' }}>رقم الشحنة</th>
                   <th style={{ padding: '12px 16px' }}>الشاحن</th>
                   <th style={{ padding: '12px 16px' }}>المسار</th>
+                  <th style={{ padding: '12px 16px' }}>السعر</th>
                   <th style={{ padding: '12px 16px' }}>تاريخ الإنشاء</th>
                   <th style={{ padding: '12px 16px' }}>الحالة</th>
                   <th style={{ padding: '12px 16px' }}>الناقل المكلف</th>
@@ -69,12 +79,15 @@ export const ShipmentsList = () => {
               <tbody>
                 {filteredShipments.map(shp => (
                   <tr key={shp.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                    <td style={{ padding: '16px', fontWeight: 600 }}>{shp.id}</td>
+                    <td style={{ padding: '16px', fontWeight: 600, fontSize: 13 }}>{shp.id}</td>
                     <td style={{ padding: '16px' }}>{shp.shipperName}</td>
                     <td style={{ padding: '16px' }}>
-                      {shp.origin} &larr; {shp.destination}
+                      {shp.pickupCity} &larr; {shp.deliveryCity}
                     </td>
-                    <td style={{ padding: '16px' }}>{new Date(shp.createdAt).toLocaleDateString('ar-SA')}</td>
+                    <td style={{ padding: '16px' }}>
+                      {shp.finalPrice != null ? `${shp.finalPrice} ر.س` : <span className="text-helper">{shp.suggestedPrice} ر.س (مقترح)</span>}
+                    </td>
+                    <td style={{ padding: '16px' }}>{shp.createdAt ? shp.createdAt.toLocaleDateString('ar-SA') : '—'}</td>
                     <td style={{ padding: '16px' }}><StatusBadge status={shp.status} /></td>
                     <td style={{ padding: '16px' }}>
                       {shp.assignedCarrierName ? shp.assignedCarrierName : <span className="text-helper">لم يتم التكليف</span>}

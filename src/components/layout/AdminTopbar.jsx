@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Menu } from 'lucide-react';
 import styles from './Layout.module.css';
-import { getAdminSession, adminLogout } from '../../admin/mock/auth';
+import { subscribeToAdminSession, adminLogout } from '../../services/firebaseAdmin';
 import { useNavigate } from 'react-router-dom';
 
 export const AdminTopbar = ({ onMenuClick }) => {
   const [session, setSession] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setSession(getAdminSession());
-  }, []);
+  useEffect(() => subscribeToAdminSession(setSession), []);
 
   const handleLogout = async () => {
     await adminLogout();

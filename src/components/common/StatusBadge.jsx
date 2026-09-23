@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from './StatusBadge.module.css';
-import { ShipmentStatus, ShipmentStatusAr, OfferStatus, OfferStatusAr, TripStage, TripStageAr, AccountStatus, DocumentStatus } from '../../constants/enums';
+import { ShipmentStatus, ShipmentStatusAr, OfferStatus, OfferStatusAr, TripStage, TripStageAr, AccountStatus, DocumentStatus, WithdrawalStatus, WithdrawalStatusAr } from '../../constants/enums';
 export const StatusBadge = ({ status, label, className = '' }) => {
     let text = label || status;
     let variant = styles.neutral;
@@ -8,11 +8,10 @@ export const StatusBadge = ({ status, label, className = '' }) => {
     if (Object.values(ShipmentStatus).includes(status)) {
         text = label || ShipmentStatusAr[status];
         switch (status) {
-            case ShipmentStatus.OFFERS_PENDING:
+            case ShipmentStatus.PENDING_OFFERS:
                 variant = styles.neutral;
                 break;
             case ShipmentStatus.NEGOTIATING:
-            case ShipmentStatus.SELECTION_AWAITING:
                 variant = styles.warning;
                 break;
             case ShipmentStatus.ACTIVE:
@@ -72,6 +71,11 @@ export const StatusBadge = ({ status, label, className = '' }) => {
     else if (status === AccountStatus.REJECTED || status === DocumentStatus.REJECTED) {
         text = label || 'مرفوض';
         variant = styles.error;
+    }
+    // Withdrawal-only state (PENDING/REJECTED already covered above).
+    else if (status === WithdrawalStatus.PAID) {
+        text = label || WithdrawalStatusAr[status];
+        variant = styles.success;
     }
     const classes = [styles.badge, variant, className].filter(Boolean).join(' ');
     return (<span className={classes}>

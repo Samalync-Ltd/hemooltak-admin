@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '../../components/common/Card';
-import { getDashboardMetrics } from '../../admin/mock/auth';
+import { getDashboardMetrics } from '../../services/firebaseAdmin';
 
 export const AdminDashboard = () => {
   const [metrics, setMetrics] = useState(null);
@@ -73,7 +73,7 @@ export const AdminDashboard = () => {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
           <div>
             <div className="text-helper">بانتظار العروض</div>
-            <div style={{ fontSize: 20, fontWeight: 'bold' }}>{metrics.shipmentCounts.AWAITING_OFFERS || 0}</div>
+            <div style={{ fontSize: 20, fontWeight: 'bold' }}>{metrics.shipmentCounts.PENDING_OFFERS || 0}</div>
           </div>
           <div>
             <div className="text-helper">قيد التفاوض</div>

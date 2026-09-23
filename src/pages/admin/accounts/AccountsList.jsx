@@ -4,7 +4,7 @@ import { Card } from '../../../components/common/Card';
 import { Input } from '../../../components/common/Input';
 import { Button } from '../../../components/common/Button';
 import { StatusBadge } from '../../../components/common/StatusBadge';
-import { getAccounts } from '../../../admin/mock/accounts';
+import { getAccounts } from '../../../services/firebaseAdmin';
 
 export const AccountsList = () => {
   const [accounts, setAccounts] = useState([]);

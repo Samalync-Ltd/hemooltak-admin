@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { adminLogin } from '../../../admin/mock/auth';
+import { adminLogin } from '../../../services/firebaseAdmin';
 import { Card } from '../../../components/common/Card';
 import { Input } from '../../../components/common/Input';
 import { Button } from '../../../components/common/Button';
@@ -28,7 +28,12 @@ export const AdminLogin = () => {
       await adminLogin(email, password);
       navigate('/admin');
     } catch (err) {
-      setError(err.message || 'خطأ في تسجيل الدخول');
+      const code = err.code || '';
+      if (code.includes('invalid-credential') || code.includes('wrong-password') || code.includes('user-not-found')) {
+        setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+      } else {
+        setError(err.message || 'خطأ في تسجيل الدخول');
+      }
     } finally {
       setLoading(false);
     }
