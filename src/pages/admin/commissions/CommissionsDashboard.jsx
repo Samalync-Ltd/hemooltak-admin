@@ -12,6 +12,9 @@ import {
 import { WithdrawalStatus } from '../../../constants/enums';
 import { useNavigate } from 'react-router-dom';
 
+/** "SA0380000000608010167519" -> "SA03 8000 0000 6080 1016 7519" for reading/typing into a bank app. */
+const formatIban = (iban) => (iban || '').replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim();
+
 export const CommissionsDashboard = () => {
   const [rate, setRate] = useState(null);
   const [tempRate, setTempRate] = useState('');
@@ -20,7 +23,19 @@ export const CommissionsDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [timeFilter, setTimeFilter] = useState('ALL'); // DAILY, MONTHLY, ALL
+  const [copiedId, setCopiedId] = useState(null);
   const navigate = useNavigate();
+
+  // Copies the unspaced IBAN — the form banking apps accept on paste.
+  const copyIban = async (req) => {
+    try {
+      await navigator.clipboard.writeText(req.iban);
+      setCopiedId(req.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      window.prompt('انسخ الآيبان:', req.iban);
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -66,8 +81,12 @@ export const CommissionsDashboard = () => {
     }
   };
 
-  const handleWithdrawalDecision = async (id, decision) => {
-    if (!window.confirm(`هل أنت متأكد من تغيير حالة هذا الطلب إلى ${decision === 'PAID' ? 'مدفوع' : 'مرفوض'}؟`)) {
+  const handleWithdrawalDecision = async (req, decision) => {
+    const id = req.id;
+    const question = decision === 'PAID'
+      ? `تأكيد أنه تم تحويل ${req.amount} ر.س إلى:\n${req.bankAccountName || '—'}\n${req.iban ? formatIban(req.iban) : 'لا يوجد آيبان'}\n\nهل تريد تحديد الطلب كمدفوع؟`
+      : 'هل أنت متأكد من رفض طلب السحب هذا؟';
+    if (!window.confirm(question)) {
       return;
     }
     let reason;
@@ -153,18 +172,36 @@ export const CommissionsDashboard = () => {
                     التاريخ: {req.requestDate ? req.requestDate.toLocaleDateString('ar-SA') : '—'}
                     {req.note && ` — ${req.note}`}
                   </div>
+                  <div style={{ marginBottom: 12, padding: 10, borderRadius: 8, backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)' }}>
+                    <div className="text-helper" style={{ fontSize: 12, marginBottom: 6 }}>التحويل إلى</div>
+                    {req.iban ? (
+                      <>
+                        <div style={{ fontWeight: 600, marginBottom: 4 }}>{req.bankAccountName}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
+                          <span dir="ltr" style={{ fontFamily: 'monospace', fontSize: 14 }}>{formatIban(req.iban)}</span>
+                          <Button variant="outline" onClick={() => copyIban(req)} style={{ padding: '4px 10px', fontSize: 12 }}>
+                            {copiedId === req.id ? 'تم النسخ ✓' : 'نسخ الآيبان'}
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ color: 'var(--color-error)', fontSize: 13 }}>
+                        لا توجد بيانات بنكية على هذا الطلب (طلب قديم قبل إضافة الآيبان) — تواصل مع الناقل أو ارفض الطلب.
+                      </div>
+                    )}
+                  </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <Button
                       disabled={busy}
                       style={{ flex: 1, backgroundColor: 'var(--color-success)', color: 'white' }}
-                      onClick={() => handleWithdrawalDecision(req.id, 'PAID')}
+                      onClick={() => handleWithdrawalDecision(req, 'PAID')}
                     >
                       تحديد كمدفوع
                     </Button>
                     <Button
                       disabled={busy}
                       style={{ flex: 1, backgroundColor: 'var(--color-error)', color: 'white' }}
-                      onClick={() => handleWithdrawalDecision(req.id, 'REJECTED')}
+                      onClick={() => handleWithdrawalDecision(req, 'REJECTED')}
                     >
                       رفض
                     </Button>

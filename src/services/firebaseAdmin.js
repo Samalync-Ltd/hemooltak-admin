@@ -126,6 +126,11 @@ export const getWithdrawals = async () => {
             carrierName: names[r.carrierId] || r.carrierId,
             amount: r.amount,
             status: r.status,
+            // Snapshot taken when the carrier requested this withdrawal —
+            // pay to THIS, never to the carrier's current profile IBAN
+            // (INTEGRATION.md §9). Older requests have neither field.
+            iban: r.iban || null,
+            bankAccountName: r.bankAccountName || null,
             note: r.note || null,
             requestDate: r.requestedAt?.toDate?.() ?? null,
         }))
