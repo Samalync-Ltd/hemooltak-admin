@@ -17,10 +17,10 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// The backend's Cloud Functions all run in me-central2 (Dammam) — every
-// httpsCallable MUST be created against this region, or the call 404s.
-// See hemooltak-backend/INTEGRATION.md, "Region for all Cloud Functions".
-export const functions = getFunctions(app, 'me-central2');
+// Every Cloud Function in hemooltak-backend runs in me-central1 (Doha) —
+// see hemooltak-backend/functions/src/constants.ts. Calling httpsCallable
+// against any other region 404s every single time.
+export const functions = getFunctions(app, import.meta.env.VITE_FUNCTIONS_REGION || 'me-central1');
 export const storage = getStorage(app);
 
 const USE_EMULATORS = import.meta.env.VITE_USE_EMULATORS === 'true';
