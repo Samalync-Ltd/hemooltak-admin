@@ -8,7 +8,6 @@ import { Button } from '../../../components/common/Button';
 export const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -68,28 +67,14 @@ export const AdminLogin = () => {
             placeholder="admin@hemooltak.com"
           />
 
-          <div style={{ position: 'relative' }}>
-            <Input
-              label="كلمة المرور"
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              style={{
-                position: 'absolute',
-                left: 12,
-                top: 36,
-                color: 'var(--color-text-muted)',
-                fontSize: 14
-              }}
-            >
-              {showPassword ? 'إخفاء' : 'عرض'}
-            </button>
-          </div>
+          <Input
+            label="كلمة المرور"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+          />
 
           <Button type="submit" variant="primary" disabled={loading} style={{ marginTop: 8 }}>
             {loading ? 'جاري الدخول...' : 'تسجيل الدخول'}
