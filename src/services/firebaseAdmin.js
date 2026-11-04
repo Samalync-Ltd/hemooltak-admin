@@ -26,6 +26,19 @@ export const toArabicError = (err) => {
         return `لا يمكن توثيق الحساب قبل قبول المستندات التالية: ${names}`;
     }
     switch (code) {
+        case 'auth/invalid-credential':
+        case 'auth/invalid-login-credentials':
+        case 'auth/wrong-password':
+        case 'auth/user-not-found':
+            return 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+        case 'auth/invalid-email':
+            return 'صيغة البريد الإلكتروني غير صحيحة';
+        case 'auth/user-disabled':
+            return 'هذا الحساب موقوف — تواصل مع مسؤول النظام';
+        case 'auth/too-many-requests':
+            return 'محاولات كثيرة فاشلة — انتظر قليلاً ثم حاول مرة أخرى';
+        case 'auth/network-request-failed':
+            return 'تعذّر الاتصال بالخادم. تحقق من الاتصال بالإنترنت وحاول مرة أخرى.';
         case 'permission-denied':
         case 'unauthenticated':
             return 'ليست لديك صلاحية لتنفيذ هذا الإجراء. سجّل الدخول بحساب مدير ثم حاول مرة أخرى.';
@@ -274,8 +287,12 @@ export const getCommissionConfig = async () => {
     return { commissionPercent: data.commissionPercent ?? null, warningThreshold: data.warningThreshold ?? 3 };
 };
 
+/** Writes only the fields passed — leaving one out keeps whatever is already in config/platform. */
 export const setCommissionConfig = async ({ commissionPercent, warningThreshold }) => {
-    await setDoc(doc(db, 'config', 'platform'), { commissionPercent, warningThreshold }, { merge: true });
+    const updates = {};
+    if (commissionPercent !== undefined) updates.commissionPercent = commissionPercent;
+    if (warningThreshold !== undefined) updates.warningThreshold = warningThreshold;
+    await setDoc(doc(db, 'config', 'platform'), updates, { merge: true });
 };
 
 // --- Commission report ---------------------------------------------------
@@ -492,6 +509,24 @@ export const liftSuspension = async (uid, reason, resetWarnings) =>
 /** Writes off what a user owes, whole (no amount) or in part. Does not lift a suspension or touch warnings (INTEGRATION.md §12). */
 export const forgiveDebt = async (uid, reason, amount) =>
     (await call('forgiveDebt')({ uid, reason, ...(amount ? { amount: Number(amount) } : {}) })).data;
+
+// --- Broadcast notifications (sendBroadcast, INTEGRATION.md notifications) ---
+/** audience: ALL | SHIPPER | CARRIER. Resolves { audience, recipients }. */
+export const sendBroadcast = async ({ title, body, audience }) =>
+    (await call('sendBroadcast')({ title, body, audience })).data;
+
+// --- Platform content (config/content) -----------------------------------
+// No Cloud Function exists for this; like the master data below it lives in
+// config/{docId}, which only admins may write (firestore.rules).
+export const getPlatformContent = async () => {
+    const snap = await getDoc(doc(db, 'config', 'content'));
+    const data = snap.exists() ? snap.data() : {};
+    return { aboutUs: data.aboutUs || '', terms: data.terms || '' };
+};
+
+export const savePlatformContent = async (field, value) => {
+    await setDoc(doc(db, 'config', 'content'), { [field]: value, updatedAt: serverTimestamp() }, { merge: true });
+};
 
 // --- Master data: truck & cargo types (config/truckTypes, config/cargoTypes) ---
 // There is no Cloud Function for these. `config/{docId}` is readable by any

@@ -3,7 +3,6 @@ import AdminLayout from './components/layout/AdminLayout';
 import { AdminProtectedRoute } from './components/layout/AdminProtectedRoute';
 import { AdminLogin } from './pages/admin/auth/AdminLogin';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
-import { AdminApprovals } from './pages/admin/AdminApprovals';
 import { AccountsList } from './pages/admin/accounts/AccountsList';
 import { AccountDetails } from './pages/admin/accounts/AccountDetails';
 import { ShipmentsList } from './pages/admin/shipments/ShipmentsList';
@@ -24,7 +23,7 @@ function App() {
         <Route path="/admin" element={<AdminProtectedRoute />}>
           <Route element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
-            <Route path="approvals" element={<AdminApprovals />} />
+            <Route path="approvals" element={<Navigate to="/admin/accounts" replace />} />
             <Route path="accounts" element={<AccountsList />} />
             <Route path="accounts/:accountId" element={<AccountDetails />} />
             <Route path="shipments" element={<ShipmentsList />} />

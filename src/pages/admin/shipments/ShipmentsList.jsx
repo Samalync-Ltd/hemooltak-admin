@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { StatusBadge } from '../../../components/common/StatusBadge';
-import { getShipments } from '../../../services/firebaseAdmin';
+import { getShipments, toArabicError } from '../../../services/firebaseAdmin';
 import { ShipmentStatus } from '../../../constants/enums';
 
 const FILTERS = [
@@ -29,7 +29,7 @@ export const ShipmentsList = () => {
       setShipments(await getShipments());
     } catch (err) {
       console.error(err);
-      setError(err.message || 'تعذر تحميل الشحنات');
+      setError(toArabicError(err));
     } finally {
       setLoading(false);
     }

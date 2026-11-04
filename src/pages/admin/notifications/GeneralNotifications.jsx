@@ -2,29 +2,41 @@ import React, { useState } from 'react';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
+import { sendBroadcast, toArabicError } from '../../../services/firebaseAdmin';
 
 export const GeneralNotifications = () => {
   const [recipient, setRecipient] = useState('ALL');
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState(null); // { type: 'success' | 'error', text }
 
   const handleSend = async (e) => {
     e.preventDefault();
+    setNotice(null);
     if (!title.trim() || !message.trim()) {
-      alert('الرجاء إدخال عنوان ومحتوى الإشعار');
+      setNotice({ type: 'error', text: 'الرجاء إدخال عنوان ومحتوى الإشعار' });
       return;
     }
 
     setLoading(true);
     try {
-      // Simulate network request
-      await new Promise(resolve => setTimeout(resolve, 600));
-      alert('تم إرسال الإشعار بنجاح (محاكاة)');
+      const { recipients } = await sendBroadcast({ title: title.trim(), body: message.trim(), audience: recipient });
+      setNotice({
+        type: 'success',
+        text: recipients > 0 ? `تم إرسال الإشعار إلى ${recipients} مستخدم` : 'لم يُرسل الإشعار — لا يوجد مستخدمون في هذه الفئة بعد',
+      });
       setTitle('');
       setMessage('');
     } catch (err) {
-      alert('حدث خطأ');
+      // The backend refuses broadcasts that look like they carry contact or
+      // location details (they show on lock screens) — say so in Arabic.
+      setNotice({
+        type: 'error',
+        text: err?.code === 'functions/invalid-argument'
+          ? 'لم يُرسل الإشعار — تأكد من عدم وجود أرقام جوال أو عناوين أو مواقع في العنوان أو المحتوى.'
+          : toArabicError(err),
+      });
     } finally {
       setLoading(false);
     }
@@ -37,7 +49,7 @@ export const GeneralNotifications = () => {
       <Card style={{ maxWidth: 600 }}>
         <h3 style={{ marginBottom: 16 }}>إرسال إشعار جديد</h3>
         <p className="text-helper" style={{ marginBottom: 24 }}>
-          سيظهر هذا الإشعار في مركز الإشعارات الخاص بالمستخدمين المحددين.
+          سيظهر هذا الإشعار في مركز الإشعارات الخاص بالمستخدمين المحددين، وقد يظهر على شاشة القفل في أجهزتهم — لا تكتب فيه أرقام جوال أو عناوين أو مواقع.
         </p>
 
         <form onSubmit={handleSend} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -56,8 +68,8 @@ export const GeneralNotifications = () => {
               }}
             >
               <option value="ALL">جميع المستخدمين</option>
-              <option value="SHIPPERS">الشاحنين فقط</option>
-              <option value="CARRIERS">الناقلين فقط</option>
+              <option value="SHIPPER">الشاحنين فقط</option>
+              <option value="CARRIER">الناقلين فقط</option>
             </select>
           </div>
 
@@ -86,6 +98,12 @@ export const GeneralNotifications = () => {
               }}
             />
           </div>
+
+          {notice && (
+            <div role={notice.type === 'error' ? 'alert' : 'status'} style={{ color: notice.type === 'error' ? 'var(--color-error)' : 'var(--color-success)', fontSize: 14 }}>
+              {notice.text}
+            </div>
+          )}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
             <Button type="submit" variant="primary" disabled={loading}>

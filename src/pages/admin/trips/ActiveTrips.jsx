@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
-import { getTrips, adminCancelTrip } from '../../../services/firebaseAdmin';
+import { getTrips, adminCancelTrip, toArabicError } from '../../../services/firebaseAdmin';
 import { TripStageAr, TripStatus, TripStatusAr, ChargeTo } from '../../../constants/enums';
 
 const CHARGE_OPTIONS = [
@@ -43,7 +43,7 @@ export const ActiveTrips = () => {
       setTrips(await getTrips());
     } catch (err) {
       console.error(err);
-      setError(err.message || 'تعذر تحميل الرحلات');
+      setError(toArabicError(err));
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,7 @@ export const ActiveTrips = () => {
       setCancelTarget(null);
       loadTrips();
     } catch (err) {
-      alert(err.message || 'حدث خطأ أثناء الإلغاء');
+      alert(toArabicError(err));
     } finally {
       setSubmitting(false);
     }

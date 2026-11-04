@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
-import { getTruckTypes, saveTruckTypes } from '../../../services/firebaseAdmin';
+import { getTruckTypes, saveTruckTypes, toArabicError } from '../../../services/firebaseAdmin';
 
 /**
  * The backend accepts exactly seven truck types (INTEGRATION.md §1) and
@@ -25,7 +25,7 @@ export const TruckTypes = () => {
       setTruckTypes(await getTruckTypes());
     } catch (err) {
       console.error(err);
-      setError(err.message || 'تعذر تحميل أنواع الشاحنات');
+      setError(toArabicError(err));
     } finally {
       setLoading(false);
     }
@@ -40,7 +40,7 @@ export const TruckTypes = () => {
       setTruckTypes(next);
       return true;
     } catch (err) {
-      alert(err.message || 'حدث خطأ أثناء الحفظ');
+      alert(toArabicError(err));
       return false;
     } finally {
       setSaving(false);

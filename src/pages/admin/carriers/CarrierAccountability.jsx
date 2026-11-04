@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
-import { getCarriersAccountability, liftSuspension, forgiveDebt } from '../../../services/firebaseAdmin';
+import { getCarriersAccountability, liftSuspension, forgiveDebt, toArabicError } from '../../../services/firebaseAdmin';
 
 export const CarrierAccountability = () => {
   const [carriers, setCarriers] = useState([]);
@@ -21,7 +21,7 @@ export const CarrierAccountability = () => {
       setThreshold(warningThreshold);
     } catch (err) {
       console.error(err);
-      setError(err.message || 'تعذر تحميل بيانات الناقلين');
+      setError(toArabicError(err));
     } finally {
       setLoading(false);
     }
@@ -35,7 +35,7 @@ export const CarrierAccountability = () => {
       await action();
       await loadCarriers();
     } catch (err) {
-      alert(err.message || 'حدث خطأ');
+      alert(toArabicError(err));
     } finally {
       setBusyId(null);
     }

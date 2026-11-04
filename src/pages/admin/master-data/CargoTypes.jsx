@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
-import { getCargoTypes, saveCargoTypes } from '../../../services/firebaseAdmin';
+import { getCargoTypes, saveCargoTypes, toArabicError } from '../../../services/firebaseAdmin';
 
 const CARGO_CATEGORY = { NORMAL: 'NORMAL', SPECIAL_CONDITIONS: 'SPECIAL_CONDITIONS', HIGH_RISK: 'HIGH_RISK' };
 
@@ -44,7 +44,7 @@ export const CargoTypes = () => {
       setCargoTypes(await getCargoTypes());
     } catch (err) {
       console.error(err);
-      setError(err.message || 'تعذر تحميل أنواع البضائع');
+      setError(toArabicError(err));
     } finally {
       setLoading(false);
     }
@@ -59,7 +59,7 @@ export const CargoTypes = () => {
       setCargoTypes(next);
       return true;
     } catch (err) {
-      alert(err.message || 'حدث خطأ أثناء الحفظ');
+      alert(toArabicError(err));
       return false;
     } finally {
       setSaving(false);

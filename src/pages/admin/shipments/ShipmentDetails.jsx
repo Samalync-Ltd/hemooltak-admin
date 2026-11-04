@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { StatusBadge } from '../../../components/common/StatusBadge';
-import { getShipmentDetails } from '../../../services/firebaseAdmin';
+import { getShipmentDetails, toArabicError } from '../../../services/firebaseAdmin';
 import { TruckTypeAr, TripStageAr, TripStatusAr, TripStatus } from '../../../constants/enums';
 
 const Field = ({ label, children }) => (
@@ -27,7 +27,7 @@ export const ShipmentDetails = () => {
     setLoading(true);
     getShipmentDetails(shipmentId)
       .then((data) => { if (!cancelled) setShipment(data); })
-      .catch((err) => { if (!cancelled) setError(err.message || 'تعذر تحميل الشحنة'); })
+      .catch((err) => { if (!cancelled) setError(toArabicError(err)); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [shipmentId]);

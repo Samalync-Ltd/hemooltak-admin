@@ -7,8 +7,7 @@ import {
   setCommissionConfig,
   getCommissionReport,
   getWithdrawals,
-  processWithdrawal,
-} from '../../../services/firebaseAdmin';
+  processWithdrawal, toArabicError } from '../../../services/firebaseAdmin';
 import { WithdrawalStatus } from '../../../constants/enums';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -90,11 +89,11 @@ export const CommissionsDashboard = () => {
 
     setBusy(true);
     try {
-      await setCommissionConfig({ commissionPercent: newRate, warningThreshold: 3 });
+      await setCommissionConfig({ commissionPercent: newRate });
       setRate(newRate);
       alert('تم تحديث نسبة العمولة بنجاح. بدون هذه النسبة لا يمكن تسوية أي رحلة أو إلغاء بعد الإسناد.');
     } catch (err) {
-      alert(err.message || 'حدث خطأ أثناء التحديث');
+      alert(toArabicError(err));
     } finally {
       setBusy(false);
     }
@@ -120,7 +119,7 @@ export const CommissionsDashboard = () => {
       await processWithdrawal(id, decision, reason);
       await loadData();
     } catch (err) {
-      alert(err.message || 'حدث خطأ');
+      alert(toArabicError(err));
     } finally {
       setBusy(false);
     }

@@ -1,24 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
-import { mockData } from '../../../admin/mock/data';
-
-// Basic mock service simulation for content
-const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
-const getContent = async () => {
-  await delay();
-  return { ...mockData.content };
-};
-const updateContent = async (key, value) => {
-  await delay();
-  mockData.content[key] = value;
-  return value;
-};
+import { getPlatformContent as getContent, savePlatformContent as updateContent, toArabicError } from '../../../services/firebaseAdmin';
 
 export const ContentManagement = () => {
   const [content, setContent] = useState({ aboutUs: '', terms: '' });
   const [loading, setLoading] = useState(true);
   const [savingField, setSavingField] = useState(null);
+  const [notice, setNotice] = useState(null); // { type: 'success' | 'error', text }
 
   useEffect(() => {
     loadContent();
@@ -30,7 +19,7 @@ export const ContentManagement = () => {
       const data = await getContent();
       setContent(data);
     } catch (err) {
-      console.error(err);
+      setNotice({ type: 'error', text: toArabicError(err) });
     } finally {
       setLoading(false);
     }
@@ -38,11 +27,12 @@ export const ContentManagement = () => {
 
   const handleSave = async (field) => {
     setSavingField(field);
+    setNotice(null);
     try {
       await updateContent(field, content[field]);
-      alert('تم حفظ المحتوى بنجاح');
+      setNotice({ type: 'success', text: 'تم حفظ المحتوى بنجاح' });
     } catch (err) {
-      alert('حدث خطأ');
+      setNotice({ type: 'error', text: toArabicError(err) });
     } finally {
       setSavingField(null);
     }
@@ -55,6 +45,12 @@ export const ContentManagement = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ margin: 0 }}>إدارة محتوى المنصة</h2>
       </div>
+
+      {notice && (
+        <div role={notice.type === 'error' ? 'alert' : 'status'} style={{ color: notice.type === 'error' ? 'var(--color-error)' : 'var(--color-success)' }}>
+          {notice.text}
+        </div>
+      )}
 
       <div className="responsive-two-col-even">
         <Card>
