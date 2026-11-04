@@ -5,12 +5,44 @@ import {
     onAuthStateChanged,
 } from 'firebase/auth';
 import {
-    doc, getDoc, getDocs, setDoc, collection, query, where, orderBy, serverTimestamp,
+    doc, getDoc, getDocs, setDoc, collection, query, where, orderBy, serverTimestamp, onSnapshot,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { TruckType, TruckTypeAr } from '../constants/enums';
+import { TruckType, TruckTypeAr, AccountDocumentTypeAr } from '../constants/enums';
 
 const call = (name) => httpsCallable(functions, name);
+
+/**
+ * Cloud Function errors arrive in English (and Firestore's in technical
+ * English) — turn them into something an Arabic-speaking admin can act on.
+ * Messages that are already Arabic (thrown by this file) pass through.
+ */
+export const toArabicError = (err) => {
+    const message = err?.message || '';
+    if (/[؀-ۿ]/.test(message)) return message;
+    const code = (err?.code || '').replace(/^functions\//, '');
+    if (code === 'failed-precondition' && Array.isArray(err?.details?.missing)) {
+        const names = err.details.missing.map((t) => AccountDocumentTypeAr[t] || t).join('، ');
+        return `لا يمكن توثيق الحساب قبل قبول المستندات التالية: ${names}`;
+    }
+    switch (code) {
+        case 'permission-denied':
+        case 'unauthenticated':
+            return 'ليست لديك صلاحية لتنفيذ هذا الإجراء. سجّل الدخول بحساب مدير ثم حاول مرة أخرى.';
+        case 'not-found':
+            return 'العنصر المطلوب غير موجود — ربما حُذف أو تغيّر. حدّث الصفحة وحاول مرة أخرى.';
+        case 'failed-precondition':
+            return 'لا يمكن تنفيذ هذا الإجراء في الحالة الحالية للطلب. حدّث الصفحة وتأكد من حالته.';
+        case 'invalid-argument':
+            return 'البيانات المرسلة غير صحيحة. تأكد من الحقول وحاول مرة أخرى.';
+        case 'unavailable':
+        case 'deadline-exceeded':
+        case 'internal':
+            return 'تعذّر الاتصال بالخادم. تحقق من الاتصال بالإنترنت وحاول مرة أخرى.';
+        default:
+            return 'حدث خطأ غير متوقع. حاول مرة أخرى.';
+    }
+};
 
 // --- Session ----------------------------------------------------------
 // The backend never issues an ADMIN role through signUp (INTEGRATION.md
@@ -58,6 +90,7 @@ const toAccountSummary = (docSnap) => {
         phone: data.phone,
         email: data.email,
         type: data.role, // SHIPPER | CARRIER
+        accountType: data.accountType || null, // INDIVIDUAL | COMPANY — decides which documents are required
         status: data.accountStatus,
         isSuspended: !!data.isSuspended,
         submissionDate: data.createdAt?.toDate?.() ?? null,
@@ -135,6 +168,95 @@ export const getWithdrawals = async () => {
             requestDate: r.requestedAt?.toDate?.() ?? null,
         }))
         .sort((a, b) => (b.requestDate?.getTime() ?? 0) - (a.requestDate?.getTime() ?? 0));
+};
+
+// --- Admin inbox (the header bell) ----------------------------------------
+// Everything waiting on an admin, read live from data that already exists:
+// accounts UNDER_REVIEW, truck papers PENDING, withdrawals PENDING. Trucks
+// have no collection-group read rule, so each carrier's trucks subcollection
+// gets its own listener, attached and detached as carriers come and go.
+const isPaperPending = (paper) => paper?.status === 'PENDING' && !!paper?.fileUrl;
+
+/** Calls back with { accounts, trucks, withdrawals } (each newest first) on every change. Returns the unsubscribe function. */
+export const subscribeToAdminInbox = (callback) => {
+    let users = new Map(); // uid -> profile data
+    const trucksByCarrier = new Map(); // uid -> pending truck items
+    const truckUnsubs = new Map(); // uid -> unsubscribe
+    let pendingWithdrawals = [];
+    const ready = { users: false, withdrawals: false };
+
+    const nameOf = (uid) => {
+        const u = users.get(uid);
+        return u ? (u.companyName || u.name) : uid;
+    };
+
+    const emit = () => {
+        if (!ready.users || !ready.withdrawals) return;
+        const accounts = [...users.entries()]
+            .filter(([, u]) => u.accountStatus === 'UNDER_REVIEW')
+            .map(([uid, u]) => ({ id: uid, name: u.companyName || u.name, role: u.role, date: toDate(u.createdAt) }))
+            .sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
+        const trucks = [...trucksByCarrier.values()].flat()
+            .map((t) => ({ ...t, carrierName: nameOf(t.carrierId) }));
+        const withdrawals = pendingWithdrawals
+            .map((w) => ({ ...w, carrierName: nameOf(w.carrierId) }))
+            .sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
+        callback({ accounts, trucks, withdrawals });
+    };
+
+    const watchTrucks = (uid) => {
+        if (truckUnsubs.has(uid)) return;
+        truckUnsubs.set(uid, onSnapshot(collection(db, 'users', uid, 'trucks'), (snap) => {
+            trucksByCarrier.set(uid, snap.docs
+                .filter((d) => isPaperPending(d.data().operatingCard) || isPaperPending(d.data().registration))
+                .map((d) => {
+                    const t = d.data();
+                    return {
+                        id: d.id,
+                        carrierId: uid,
+                        label: [t.brand, t.model].filter(Boolean).join(' ') || t.plateNumber || 'مركبة',
+                        plateNumber: t.plateNumber || null,
+                        pendingCount: [t.operatingCard, t.registration].filter(isPaperPending).length,
+                    };
+                }));
+            emit();
+        }, (err) => console.error('inbox: trucks', uid, err)));
+    };
+
+    const unsubUsers = onSnapshot(
+        query(collection(db, 'users'), where('role', 'in', ['SHIPPER', 'CARRIER'])),
+        (snap) => {
+            users = new Map(snap.docs.map((d) => [d.id, d.data()]));
+            const carriers = new Set(snap.docs.filter((d) => d.data().role === 'CARRIER').map((d) => d.id));
+            carriers.forEach(watchTrucks);
+            [...truckUnsubs.keys()].filter((uid) => !carriers.has(uid)).forEach((uid) => {
+                truckUnsubs.get(uid)();
+                truckUnsubs.delete(uid);
+                trucksByCarrier.delete(uid);
+            });
+            ready.users = true;
+            emit();
+        },
+        (err) => console.error('inbox: users', err),
+    );
+
+    const unsubWithdrawals = onSnapshot(
+        query(collection(db, 'withdrawals'), where('status', '==', 'PENDING')),
+        (snap) => {
+            pendingWithdrawals = snap.docs.map((d) => ({
+                id: d.id, carrierId: d.data().carrierId, amount: d.data().amount, date: toDate(d.data().requestedAt),
+            }));
+            ready.withdrawals = true;
+            emit();
+        },
+        (err) => console.error('inbox: withdrawals', err),
+    );
+
+    return () => {
+        unsubUsers();
+        unsubWithdrawals();
+        truckUnsubs.forEach((unsub) => unsub());
+    };
 };
 
 export const processWithdrawal = async (withdrawalId, decision, reason) =>

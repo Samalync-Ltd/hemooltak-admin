@@ -52,6 +52,22 @@ export const AccountDocumentTypeAr = {
     [AccountDocumentType.MANAGER_ID]: 'هوية المسؤول',
 };
 
+// Account-level documents that must each be APPROVED before approveAccount
+// will verify the account. Mirrors REQUIRED_DOCUMENTS in
+// hemooltak-backend/functions/src/constants.ts — keep the two in step.
+// Truck papers are not part of it: a carrier can be verified while a
+// truck is still under review.
+export const RequiredDocuments = {
+    [UserRole.CARRIER]: {
+        [AccountType.INDIVIDUAL]: [AccountDocumentType.NATIONAL_ID, AccountDocumentType.PUBLIC_DRIVING_LICENCE],
+        [AccountType.COMPANY]: [AccountDocumentType.COMMERCIAL_REGISTRATION, AccountDocumentType.MANAGER_ID],
+    },
+    [UserRole.SHIPPER]: {
+        [AccountType.INDIVIDUAL]: [AccountDocumentType.NATIONAL_ID],
+        [AccountType.COMPANY]: [AccountDocumentType.COMMERCIAL_REGISTRATION, AccountDocumentType.MANAGER_ID],
+    },
+};
+
 // Truck paper field names (§2) — operatingCard / registration, per truck.
 export const TRUCK_DOCUMENT_FIELDS = ['operatingCard', 'registration'];
 

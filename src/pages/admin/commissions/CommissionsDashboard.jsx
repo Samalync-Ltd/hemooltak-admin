@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
@@ -10,7 +10,7 @@ import {
   processWithdrawal,
 } from '../../../services/firebaseAdmin';
 import { WithdrawalStatus } from '../../../constants/enums';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 /** "SA0380000000608010167519" -> "SA03 8000 0000 6080 1016 7519" for reading/typing into a bank app. */
 const formatIban = (iban) => (iban || '').replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim();
@@ -25,6 +25,10 @@ export const CommissionsDashboard = () => {
   const [timeFilter, setTimeFilter] = useState('ALL'); // DAILY, MONTHLY, ALL
   const [copiedId, setCopiedId] = useState(null);
   const navigate = useNavigate();
+  // Opened from the header bell as ?withdrawal=<id>: scroll to and highlight that request.
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get('withdrawal');
+  const refetchedFor = useRef(null);
 
   // Copies the unspaced IBAN — the form banking apps accept on paste.
   const copyIban = async (req) => {
@@ -40,6 +44,21 @@ export const CommissionsDashboard = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!highlightId || loading) return;
+    if (!withdrawals.some((w) => w.id === highlightId)) {
+      // Already on this page when the request came in — the list predates
+      // it. Fetch once more, but only once per id.
+      if (refetchedFor.current !== highlightId) {
+        refetchedFor.current = highlightId;
+        loadData();
+      }
+      return;
+    }
+    document.getElementById(`withdrawal-${highlightId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightId, loading, withdrawals]);
 
   const loadData = async () => {
     setLoading(true);
@@ -163,7 +182,7 @@ export const CommissionsDashboard = () => {
           {withdrawals.filter(w => w.status === WithdrawalStatus.PENDING).length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {withdrawals.filter(w => w.status === WithdrawalStatus.PENDING).map(req => (
-                <div key={req.id} style={{ padding: 12, border: '1px solid var(--color-border)', borderRadius: 8 }}>
+                <div key={req.id} id={`withdrawal-${req.id}`} style={{ padding: 12, borderRadius: 8, border: req.id === highlightId ? '2px solid var(--color-accent)' : '1px solid var(--color-border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                     <strong>{req.carrierName}</strong>
                     <span style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>{req.amount} ر.س</span>

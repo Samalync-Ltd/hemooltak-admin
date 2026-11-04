@@ -3,6 +3,7 @@ import { Menu } from 'lucide-react';
 import styles from './Layout.module.css';
 import { subscribeToAdminSession, adminLogout } from '../../services/firebaseAdmin';
 import { useNavigate } from 'react-router-dom';
+import { NotificationCenter } from '../common/NotificationCenter';
 
 export const AdminTopbar = ({ onMenuClick }) => {
   const [session, setSession] = useState(null);
@@ -27,12 +28,13 @@ export const AdminTopbar = ({ onMenuClick }) => {
       <div className={styles.topbarRight}>
         {session && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <NotificationCenter />
             <div className={styles.userInfo}>
               <div className={styles.avatar} style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}>
-                {session.name.substring(0, 1)}
+                {(session.name || 'A').substring(0, 1)}
               </div>
               <div className={styles.userText}>
-                <span className={styles.userName}>{session.name}</span>
+                <span className={styles.userName}>{session.name || session.email}</span>
                 <span className={styles.userRole}>مدير النظام</span>
               </div>
             </div>
