@@ -76,8 +76,8 @@ export const AdminLogin = () => {
             placeholder="••••••••"
           />
 
-          <Button type="submit" variant="primary" disabled={loading} style={{ marginTop: 8 }}>
-            {loading ? 'جاري الدخول...' : 'تسجيل الدخول'}
+          <Button type="submit" variant="primary" isLoading={loading} style={{ marginTop: 8 }}>
+            {loading ? 'جاري الدخول' : 'تسجيل الدخول'}
           </Button>
         </form>
       </Card>

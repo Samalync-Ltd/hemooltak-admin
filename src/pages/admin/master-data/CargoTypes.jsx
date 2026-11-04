@@ -3,6 +3,7 @@ import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
 import { getCargoTypes, saveCargoTypes, toArabicError } from '../../../services/firebaseAdmin';
+import { SkeletonRows } from '../../../components/common/Loader';
 
 const CARGO_CATEGORY = { NORMAL: 'NORMAL', SPECIAL_CONDITIONS: 'SPECIAL_CONDITIONS', HIGH_RISK: 'HIGH_RISK' };
 
@@ -107,7 +108,7 @@ export const CargoTypes = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ margin: 0 }}>إدارة أنواع البضائع</h2>
-        <Button variant="primary" onClick={handleOpenAdd} disabled={saving}>+ إضافة نوع جديد</Button>
+        <Button variant="primary" onClick={handleOpenAdd} isLoading={saving}>+ إضافة نوع جديد</Button>
       </div>
 
       {showForm && (
@@ -140,7 +141,7 @@ export const CargoTypes = () => {
               </select>
             </div>
             <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-              <Button type="submit" variant="primary" disabled={saving}>{saving ? 'جاري الحفظ...' : 'حفظ'}</Button>
+              <Button type="submit" variant="primary" isLoading={saving}>{saving ? 'جاري الحفظ' : 'حفظ'}</Button>
               <Button type="button" variant="outline" onClick={() => setShowForm(false)}>إلغاء</Button>
             </div>
           </form>
@@ -149,7 +150,7 @@ export const CargoTypes = () => {
 
       <Card>
         {loading ? (
-          <div style={{ padding: 24, textAlign: 'center' }}>جاري التحميل...</div>
+          <SkeletonRows rows={5} columns={3} label="جاري تحميل أنواع البضائع" />
         ) : error ? (
           <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-error)' }}>{error}</div>
         ) : cargoTypes.length === 0 ? (
@@ -179,8 +180,8 @@ export const CargoTypes = () => {
                       </td>
                       <td style={{ padding: '16px' }}>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <Button variant="outline" onClick={() => handleOpenEdit(type)} disabled={saving}>تعديل</Button>
-                          <Button style={{ color: 'var(--color-error)' }} onClick={() => handleDelete(type.id)} disabled={saving}>حذف</Button>
+                          <Button variant="outline" onClick={() => handleOpenEdit(type)} isLoading={saving}>تعديل</Button>
+                          <Button style={{ color: 'var(--color-error)' }} onClick={() => handleDelete(type.id)} isLoading={saving}>حذف</Button>
                         </div>
                       </td>
                     </tr>

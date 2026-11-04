@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, UserCheck, Truck, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { subscribeToAdminInbox } from '../../services/firebaseAdmin';
+import { Loader } from './Loader';
 
 const formatDate = (date) => (date ? date.toLocaleDateString('ar-SA') : '');
 
@@ -115,7 +116,7 @@ export const NotificationCenter = () => {
 
                     <div style={{ maxHeight: 420, overflowY: 'auto' }}>
                         {!inbox ? (
-                            <div style={{ padding: 32, textAlign: 'center', color: 'var(--color-text-muted)' }}>جاري التحميل...</div>
+                            <Loader variant="section" />
                         ) : total === 0 ? (
                             <div style={{ padding: 32, textAlign: 'center', color: 'var(--color-text-muted)' }}>لا يوجد شيء بانتظار المراجعة ✓</div>
                         ) : (

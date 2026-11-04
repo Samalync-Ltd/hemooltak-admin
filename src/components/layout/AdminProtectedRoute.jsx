@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { subscribeToAdminSession } from '../../services/firebaseAdmin';
+import { Loader } from '../common/Loader';
 
 export const AdminProtectedRoute = () => {
   // Firebase's auth state isn't known synchronously on a fresh page load —
@@ -12,7 +13,7 @@ export const AdminProtectedRoute = () => {
   useEffect(() => subscribeToAdminSession(setSession), []);
 
   if (session === undefined) {
-    return <div style={{ padding: 24 }}>جاري التحقق من الجلسة...</div>;
+    return <Loader variant="screen" label="جاري التحقق من الجلسة" />;
   }
 
   if (!session) {

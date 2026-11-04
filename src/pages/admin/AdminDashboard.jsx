@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '../../components/common/Card';
 import { getDashboardMetrics } from '../../services/firebaseAdmin';
+import { Loader } from '../../components/common/Loader';
 
 export const AdminDashboard = () => {
   const [metrics, setMetrics] = useState(null);
@@ -21,7 +22,7 @@ export const AdminDashboard = () => {
   }, []);
 
   if (loading) {
-    return <div style={{ padding: 24 }}>جاري التحميل...</div>;
+    return <Loader label="جاري تحميل لوحة التحكم" />;
   }
 
   if (!metrics) {

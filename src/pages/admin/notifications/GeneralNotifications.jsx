@@ -106,8 +106,8 @@ export const GeneralNotifications = () => {
           )}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-            <Button type="submit" variant="primary" disabled={loading}>
-              {loading ? 'جاري الإرسال...' : 'إرسال الإشعار'}
+            <Button type="submit" variant="primary" isLoading={loading}>
+              {loading ? 'جاري الإرسال' : 'إرسال الإشعار'}
             </Button>
           </div>
         </form>

@@ -5,6 +5,7 @@ import { Button } from '../../../components/common/Button';
 import { StatusBadge } from '../../../components/common/StatusBadge';
 import { getShipments, toArabicError } from '../../../services/firebaseAdmin';
 import { ShipmentStatus } from '../../../constants/enums';
+import { SkeletonRows } from '../../../components/common/Loader';
 
 const FILTERS = [
   { value: 'ALL', label: 'الكل' },
@@ -54,7 +55,7 @@ export const ShipmentsList = () => {
         </div>
 
         {loading ? (
-          <div style={{ padding: 24, textAlign: 'center' }}>جاري التحميل...</div>
+          <SkeletonRows rows={8} columns={6} label="جاري تحميل الشحنات" />
         ) : error ? (
           <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-error)' }}>{error}</div>
         ) : filteredShipments.length === 0 ? (

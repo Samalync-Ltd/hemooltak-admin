@@ -10,6 +10,7 @@ import {
   processWithdrawal, toArabicError } from '../../../services/firebaseAdmin';
 import { WithdrawalStatus } from '../../../constants/enums';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Loader } from '../../../components/common/Loader';
 
 /** "SA0380000000608010167519" -> "SA03 8000 0000 6080 1016 7519" for reading/typing into a bank app. */
 const formatIban = (iban) => (iban || '').replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim();
@@ -142,7 +143,7 @@ export const CommissionsDashboard = () => {
 
   const totalCommission = filteredTxs.reduce((sum, tx) => sum + tx.amount, 0);
 
-  if (loading) return <div style={{ padding: 24 }}>جاري التحميل...</div>;
+  if (loading) return <Loader label="جاري تحميل العمولات وطلبات السحب" />;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>

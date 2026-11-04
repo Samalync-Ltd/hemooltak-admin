@@ -5,6 +5,7 @@ import { Input } from '../../../components/common/Input';
 import { Button } from '../../../components/common/Button';
 import { StatusBadge } from '../../../components/common/StatusBadge';
 import { getAccounts } from '../../../services/firebaseAdmin';
+import { SkeletonRows } from '../../../components/common/Loader';
 
 export const AccountsList = () => {
   const [accounts, setAccounts] = useState([]);
@@ -88,7 +89,7 @@ export const AccountsList = () => {
         </div>
 
         {loading ? (
-          <div style={{ padding: 24, textAlign: 'center' }}>جاري التحميل...</div>
+          <SkeletonRows rows={8} columns={6} label="جاري تحميل الحسابات" />
         ) : filteredAccounts.length === 0 ? (
           <div style={{ padding: 48, textAlign: 'center', color: 'var(--color-text-muted)' }}>
             لا توجد حسابات مطابقة للبحث

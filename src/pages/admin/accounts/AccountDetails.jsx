@@ -10,6 +10,7 @@ import {
   toArabicError,
 } from '../../../services/firebaseAdmin';
 import { AccountStatus, DocumentStatus, AccountDocumentTypeAr, TruckTypeAr, RequiredDocuments } from '../../../constants/enums';
+import { Loader } from '../../../components/common/Loader';
 
 /** null = cancelled, '' = confirmed but left blank, otherwise the trimmed reason. */
 const promptReason = (label) => {
@@ -117,7 +118,7 @@ export const AccountDetails = () => {
     return reason || null;
   };
 
-  if (loading) return <div style={{ padding: 24 }}>جاري التحميل...</div>;
+  if (loading) return <Loader label="جاري تحميل بيانات الحساب" />;
   if (error) return <div style={{ padding: 24, color: 'var(--color-error)' }}>{error}</div>;
   if (!account) return null;
 

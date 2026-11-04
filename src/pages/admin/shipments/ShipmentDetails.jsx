@@ -5,6 +5,7 @@ import { Button } from '../../../components/common/Button';
 import { StatusBadge } from '../../../components/common/StatusBadge';
 import { getShipmentDetails, toArabicError } from '../../../services/firebaseAdmin';
 import { TruckTypeAr, TripStageAr, TripStatusAr, TripStatus } from '../../../constants/enums';
+import { Loader } from '../../../components/common/Loader';
 
 const Field = ({ label, children }) => (
   <div>
@@ -32,7 +33,7 @@ export const ShipmentDetails = () => {
     return () => { cancelled = true; };
   }, [shipmentId]);
 
-  if (loading) return <div style={{ padding: 24 }}>جاري التحميل...</div>;
+  if (loading) return <Loader label="جاري تحميل الشحنة" />;
   if (error) return <div style={{ padding: 24, color: 'var(--color-error)' }}>{error}</div>;
   if (!shipment) return <div style={{ padding: 24, color: 'var(--color-error)' }}>الشحنة غير موجودة</div>;
 

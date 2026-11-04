@@ -3,6 +3,7 @@ import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
 import { getTruckTypes, saveTruckTypes, toArabicError } from '../../../services/firebaseAdmin';
+import { SkeletonRows } from '../../../components/common/Loader';
 
 /**
  * The backend accepts exactly seven truck types (INTEGRATION.md §1) and
@@ -84,7 +85,7 @@ export const TruckTypes = () => {
             <div style={{ flex: 1 }}>
               <Input label="الاسم الظاهر" value={labelDraft} onChange={(e) => setLabelDraft(e.target.value)} />
             </div>
-            <Button type="submit" variant="primary" disabled={saving}>{saving ? 'جاري الحفظ...' : 'حفظ'}</Button>
+            <Button type="submit" variant="primary" isLoading={saving}>{saving ? 'جاري الحفظ' : 'حفظ'}</Button>
             <Button type="button" variant="outline" onClick={() => setEditingCode(null)}>إلغاء</Button>
           </form>
         </Card>
@@ -92,7 +93,7 @@ export const TruckTypes = () => {
 
       <Card>
         {loading ? (
-          <div style={{ padding: 24, textAlign: 'center' }}>جاري التحميل...</div>
+          <SkeletonRows rows={7} columns={3} label="جاري تحميل أنواع الشاحنات" />
         ) : error ? (
           <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-error)' }}>{error}</div>
         ) : (
@@ -121,8 +122,8 @@ export const TruckTypes = () => {
                     </td>
                     <td style={{ padding: '16px' }}>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <Button variant="outline" onClick={() => handleOpenEdit(type)} disabled={saving}>تعديل</Button>
-                        <Button variant="outline" onClick={() => handleToggle(type)} disabled={saving}>
+                        <Button variant="outline" onClick={() => handleOpenEdit(type)} isLoading={saving}>تعديل</Button>
+                        <Button variant="outline" onClick={() => handleToggle(type)} isLoading={saving}>
                           {type.active ? 'إيقاف' : 'تفعيل'}
                         </Button>
                       </div>

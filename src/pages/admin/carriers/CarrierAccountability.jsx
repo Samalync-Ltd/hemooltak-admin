@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { getCarriersAccountability, liftSuspension, forgiveDebt, toArabicError } from '../../../services/firebaseAdmin';
+import { Loader } from '../../../components/common/Loader';
 
 export const CarrierAccountability = () => {
   const [carriers, setCarriers] = useState([]);
@@ -65,7 +66,7 @@ export const CarrierAccountability = () => {
     });
   };
 
-  if (loading) return <div style={{ padding: 24 }}>جاري التحميل...</div>;
+  if (loading) return <Loader label="جاري تحميل بيانات الناقلين" />;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>

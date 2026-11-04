@@ -5,6 +5,7 @@ import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
 import { getTrips, adminCancelTrip, toArabicError } from '../../../services/firebaseAdmin';
 import { TripStageAr, TripStatus, TripStatusAr, ChargeTo } from '../../../constants/enums';
+import { SkeletonRows } from '../../../components/common/Loader';
 
 const CHARGE_OPTIONS = [
   { value: ChargeTo.CARRIER, label: 'الناقل (تُحتسب العمولة عليه + إنذار)' },
@@ -109,8 +110,8 @@ export const ActiveTrips = () => {
               ))}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <Button type="submit" style={{ backgroundColor: 'var(--color-error)', color: 'white' }} disabled={submitting}>
-                {submitting ? 'جاري الإلغاء...' : 'تأكيد الإلغاء'}
+              <Button type="submit" style={{ backgroundColor: 'var(--color-error)', color: 'white' }} isLoading={submitting}>
+                {submitting ? 'جاري الإلغاء' : 'تأكيد الإلغاء'}
               </Button>
               <Button type="button" variant="outline" onClick={() => setCancelTarget(null)} disabled={submitting}>تراجع</Button>
             </div>
@@ -126,7 +127,7 @@ export const ActiveTrips = () => {
         </div>
 
         {loading ? (
-          <div style={{ padding: 24, textAlign: 'center' }}>جاري التحميل...</div>
+          <SkeletonRows rows={8} columns={6} label="جاري تحميل الرحلات" />
         ) : error ? (
           <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-error)' }}>{error}</div>
         ) : visible.length === 0 ? (

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { getPlatformContent as getContent, savePlatformContent as updateContent, toArabicError } from '../../../services/firebaseAdmin';
+import { Loader } from '../../../components/common/Loader';
 
 export const ContentManagement = () => {
   const [content, setContent] = useState({ aboutUs: '', terms: '' });
@@ -38,7 +39,7 @@ export const ContentManagement = () => {
     }
   };
 
-  if (loading) return <div style={{ padding: 24 }}>جاري التحميل...</div>;
+  if (loading) return <Loader label="جاري تحميل المحتوى" />;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -59,9 +60,9 @@ export const ContentManagement = () => {
             <Button 
               variant="primary" 
               onClick={() => handleSave('aboutUs')}
-              disabled={savingField === 'aboutUs'}
+              isLoading={savingField === 'aboutUs'}
             >
-              {savingField === 'aboutUs' ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+              {savingField === 'aboutUs' ? 'جاري الحفظ' : 'حفظ التعديلات'}
             </Button>
           </div>
           <textarea 
@@ -86,9 +87,9 @@ export const ContentManagement = () => {
             <Button 
               variant="primary" 
               onClick={() => handleSave('terms')}
-              disabled={savingField === 'terms'}
+              isLoading={savingField === 'terms'}
             >
-              {savingField === 'terms' ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+              {savingField === 'terms' ? 'جاري الحفظ' : 'حفظ التعديلات'}
             </Button>
           </div>
           <textarea 
