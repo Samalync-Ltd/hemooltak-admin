@@ -9,7 +9,7 @@ import {
   approveTruckDocument, rejectTruckDocument,
   toArabicError,
 } from '../../../services/firebaseAdmin';
-import { AccountStatus, DocumentStatus, AccountDocumentTypeAr, TruckTypeAr, RequiredDocuments } from '../../../constants/enums';
+import { AccountStatus, AccountDocumentType, DocumentStatus, AccountDocumentTypeAr, TruckTypeAr, RequiredDocuments } from '../../../constants/enums';
 import { Loader } from '../../../components/common/Loader';
 
 /** null = cancelled, '' = confirmed but left blank, otherwise the trimmed reason. */
@@ -122,7 +122,10 @@ export const AccountDetails = () => {
   if (error) return <div style={{ padding: 24, color: 'var(--color-error)' }}>{error}</div>;
   if (!account) return null;
 
-  const documents = account.documents || [];
+  // Account-level papers only. Older web registrations also filed the truck's
+  // operatingCard/registration here; those belong to (and are reviewed in)
+  // the truck section below, so they're left out of this list.
+  const documents = (account.documents || []).filter((d) => Object.values(AccountDocumentType).includes(d.type));
   const requiredTypes = RequiredDocuments[account.type]?.[account.accountType] || [];
   const checklist = requiredTypes.map((type) => ({ type, state: docStateOf(documents, type) }));
   const blockers = checklist.filter((item) => item.state !== DocState.APPROVED);
@@ -254,11 +257,28 @@ export const AccountDetails = () => {
               </div>
             )}
 
+            {isVerified ? (
+              <div role="status" style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 8,
+                backgroundColor: 'rgba(16, 185, 129, 0.08)', border: '1px solid var(--color-success)',
+              }}>
+                <span aria-hidden="true" style={{
+                  width: 32, height: 32, borderRadius: '50%', flexShrink: 0, backgroundColor: 'var(--color-success)',
+                  color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700,
+                }}>✓</span>
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--color-success)' }}>تم توثيق الحساب</div>
+                  {account.reviewedAt && (
+                    <div className="text-helper" style={{ fontSize: 13 }}>بتاريخ {formatDateValue(account.reviewedAt, true)}</div>
+                  )}
+                </div>
+              </div>
+            ) : (
             <div style={{ display: 'flex', gap: 16 }}>
               <Button
                 style={{ backgroundColor: 'var(--color-success)', color: 'white' }}
                 onClick={handleVerify}
-                disabled={busy || isVerified}
+                disabled={busy}
               >
                 توثيق الحساب
               </Button>
@@ -270,6 +290,7 @@ export const AccountDetails = () => {
                 رفض الحساب
               </Button>
             </div>
+            )}
 
             {showVerifyBlockers && blockers.length > 0 && !isVerified && (
               <div role="alert" style={{

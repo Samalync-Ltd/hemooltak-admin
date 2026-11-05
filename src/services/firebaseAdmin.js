@@ -108,6 +108,8 @@ const toAccountSummary = (docSnap) => {
         isSuspended: !!data.isSuspended,
         submissionDate: data.createdAt?.toDate?.() ?? null,
         rejectReason: data.rejectReason || null,
+        // When an admin last decided on the account (approveAccount/rejectAccount set it).
+        reviewedAt: data.reviewedAt?.toDate?.() ?? null,
     };
 };
 
