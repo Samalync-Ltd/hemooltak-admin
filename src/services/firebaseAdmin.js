@@ -12,25 +12,66 @@ import { TruckType, TruckTypeAr, AccountDocumentTypeAr } from '../constants/enum
 
 const call = (name) => httpsCallable(functions, name);
 
+const money = (n) => Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+/** Arabic per backend `details.reason` — all 29 in INTEGRATION.md §18. */
+const REASON_MESSAGES = {
+    // Admin actions
+    DOCUMENTS_NOT_APPROVED: ({ missing }) => (Array.isArray(missing) && missing.length > 0
+        ? `لا يمكن توثيق الحساب قبل اعتماد المستندات التالية: ${missing.map((t) => AccountDocumentTypeAr[t] || t).join('، ')}`
+        : 'لا يمكن توثيق الحساب قبل اعتماد جميع المستندات المطلوبة.'),
+    TRUCK_DOCUMENT_MISSING: () => 'لم يُرفع هذا المستند بعد.',
+    NOT_SUSPENDED: () => 'هذا الحساب غير موقوف.',
+    WITHDRAWAL_ALREADY_PROCESSED: () => 'تمت معالجة طلب السحب هذا مسبقاً.',
+    NO_DEBT: () => 'لا يوجد مبلغ مستحق على هذا الحساب.',
+    // User-side reasons an admin action can also hit (e.g. adminCancelTrip)
+    ACCOUNT_NOT_VERIFIED: () => 'الحساب قيد المراجعة ولم يُوثّق بعد.',
+    CARRIER_SUSPENDED: () => 'حساب الناقل موقوف مؤقتاً بسبب تكرار الإلغاء.',
+    CARRIER_BUSY: () => 'الناقل لديه رحلة نشطة.',
+    CARRIER_IN_DEBT: ({ debt }) => (debt != null ? `على الناقل مبلغ مستحق للمنصة (${money(debt)} ر.س).` : 'على الناقل مبلغ مستحق للمنصة.'),
+    PHONE_UNCHANGED: () => 'هذا هو رقم الجوال الحالي.',
+    SHIPMENT_NOT_OPEN: () => 'هذه الشحنة لم تعد متاحة.',
+    SITE_DETAILS_LOCKED: () => 'لا يمكن تعديل تفاصيل الموقع بعد إسناد الشحنة.',
+    OWN_SHIPMENT: () => 'لا يمكن تقديم عرض على الشحنة نفسها.',
+    OFFER_ALREADY_OPEN: () => 'يوجد عرض بانتظار الرد على هذه الشحنة.',
+    OFFER_NOT_PENDING: () => 'هذا العرض لم يعد متاحاً. حدّث الصفحة.',
+    NOT_YOUR_TURN: () => 'بانتظار رد الطرف الآخر على العرض.',
+    TRUCK_WRONG_TYPE: () => 'نوع الشاحنة لا يطابق النوع المطلوب لهذه الشحنة.',
+    TRUCK_CAPACITY_TOO_LOW: ({ capacityTons, weight }) => (capacityTons != null && weight != null
+        ? `حمولة الشاحنة (${capacityTons} طن) أقل من وزن الشحنة (${weight} طن).`
+        : 'حمولة الشاحنة أقل من وزن الشحنة.'),
+    TRUCK_NOT_APPROVED: () => 'مستندات الشاحنة لم تُعتمد بعد.',
+    INSUFFICIENT_BALANCE: ({ availableBalance, required, requested }) => {
+        const needed = required ?? requested;
+        return availableBalance != null && needed != null
+            ? `الرصيد المتاح (${money(availableBalance)} ر.س) لا يكفي. المبلغ المطلوب ${money(needed)} ر.س.`
+            : 'الرصيد المتاح لا يكفي لهذه العملية.';
+    },
+    BANK_DETAILS_MISSING: () => 'لا توجد بيانات حساب بنكي لهذا الناقل.',
+    TRIP_NOT_ACTIVE: () => 'هذه الرحلة لم تعد نشطة.',
+    STAGE_OUT_OF_ORDER: () => 'يجب تحديث مراحل الرحلة بالترتيب.',
+    PROOF_MISSING: () => 'صورة الإثبات لم تُرفع بعد.',
+    TRIP_NOT_DELIVERED: () => 'لا يمكن التقييم قبل تسليم الشحنة.',
+    NOTHING_TO_CANCEL: () => 'لا يوجد إسناد لإلغائه في هذه الشحنة.',
+    CANCEL_NOT_ALLOWED: () => 'لا يمكن الإلغاء بعد تحميل الشحنة.',
+    // Platform setup
+    PLATFORM_NOT_CONFIGURED: () => 'حدث خطأ في المنصة — نسبة العمولة غير مضبوطة في صفحة العمولات.',
+    PHONE_LOGIN_UNAVAILABLE: () => 'حدث خطأ في المنصة، حاول لاحقاً',
+};
+
 /**
  * Cloud Function errors arrive in English (and Firestore's in technical
  * English) — turn them into something an Arabic-speaking admin can act on.
  * Messages that are already Arabic (thrown by this file) pass through.
  */
 export const toArabicError = (err) => {
-    // Read details.reason first, never matching the message text (INTEGRATION.md §12)
+    // A backend reason code decides the message (INTEGRATION.md §18) —
+    // never the English error text.
     const details = (typeof err === 'object' && err !== null) ? (err.details || err.customData?.details) : null;
-    const reason = details?.reason || (typeof err === 'object' && err?.reason);
-    if (reason === 'TRUCK_CAPACITY_TOO_LOW') {
-        const capacityTons = details?.capacityTons ?? err?.capacityTons;
-        const weight = details?.weight ?? err?.weight;
-        if (capacityTons != null && weight != null) {
-            return `حمولة الشاحنة (${capacityTons} طن) أقل من وزن الشحنة (${weight} طن)`;
-        }
-        if (weight != null) {
-            return `حمولة الشاحنة أقل من وزن الشحنة (${weight} طن)`;
-        }
-        return 'حمولة الشاحنة أقل من وزن الشحنة';
+    const reason = details?.reason;
+    if (reason) {
+        if (reason === 'PLATFORM_NOT_CONFIGURED' || reason === 'PHONE_LOGIN_UNAVAILABLE') console.error('Platform misconfigured:', reason);
+        return REASON_MESSAGES[reason] ? REASON_MESSAGES[reason](details) : 'تعذّر تنفيذ هذا الإجراء حالياً. حدّث الصفحة وحاول مرة أخرى.';
     }
 
     const message = err?.message || '';
