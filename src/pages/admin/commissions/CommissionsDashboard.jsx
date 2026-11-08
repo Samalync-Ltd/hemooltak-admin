@@ -161,10 +161,7 @@ export const CommissionsDashboard = () => {
             <div style={{ flex: 1 }}>
               <Input
                 label="نسبة المنصة (%)"
-                type="number"
-                min="0"
-                max="100"
-                step="0.1"
+                numeric="decimal"
                 value={tempRate}
                 onChange={(e) => setTempRate(e.target.value)}
               />

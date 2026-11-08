@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, UserCheck, Truck, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { subscribeToAdminInbox } from '../../services/firebaseAdmin';
+import { useShakeOnNew } from '../../hooks/useShakeOnNew';
 import { Loader } from './Loader';
 
 const formatDate = (date) => (date ? date.toLocaleDateString('ar-SA') : '');
@@ -71,6 +72,7 @@ export const NotificationCenter = () => {
     ] : [];
 
     const total = sections.reduce((sum, s) => sum + s.items.length, 0);
+    const isShaking = useShakeOnNew(inbox ? sections.flatMap((s) => s.items.map((item) => `${s.key}:${item.id}`)) : null);
 
     const open = (to) => {
         setIsOpen(false);
@@ -86,7 +88,7 @@ export const NotificationCenter = () => {
                 aria-expanded={isOpen}
                 style={{ color: 'var(--color-text-muted)', cursor: 'pointer', background: 'none', border: 'none', position: 'relative', padding: 6, display: 'flex' }}
             >
-                <Bell size={24} />
+                <Bell size={24} className={isShaking ? 'bell-shake' : undefined} />
                 {total > 0 && (
                     <span style={{
                         position: 'absolute', top: 0, right: 0,
