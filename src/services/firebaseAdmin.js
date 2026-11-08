@@ -18,6 +18,21 @@ const call = (name) => httpsCallable(functions, name);
  * Messages that are already Arabic (thrown by this file) pass through.
  */
 export const toArabicError = (err) => {
+    // Read details.reason first, never matching the message text (INTEGRATION.md §12)
+    const details = (typeof err === 'object' && err !== null) ? (err.details || err.customData?.details) : null;
+    const reason = details?.reason || (typeof err === 'object' && err?.reason);
+    if (reason === 'TRUCK_CAPACITY_TOO_LOW') {
+        const capacityTons = details?.capacityTons ?? err?.capacityTons;
+        const weight = details?.weight ?? err?.weight;
+        if (capacityTons != null && weight != null) {
+            return `حمولة الشاحنة (${capacityTons} طن) أقل من وزن الشحنة (${weight} طن)`;
+        }
+        if (weight != null) {
+            return `حمولة الشاحنة أقل من وزن الشحنة (${weight} طن)`;
+        }
+        return 'حمولة الشاحنة أقل من وزن الشحنة';
+    }
+
     const message = err?.message || '';
     if (/[؀-ۿ]/.test(message)) return message;
     const code = (err?.code || '').replace(/^functions\//, '');
