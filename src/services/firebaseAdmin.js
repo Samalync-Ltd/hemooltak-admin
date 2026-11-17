@@ -627,6 +627,14 @@ export const savePlatformContent = async (field, value) => {
 // truck's `type` against a FIXED enum (INTEGRATION.md §1). An admin can
 // rename a type and hide it from new shipments, but cannot invent a new
 // one — the backend would reject it.
+/**
+ * The English name of a cargo or truck type, shown on the website in
+ * English (with the Arabic name as the fallback when it is empty). The
+ * field's name is in this one place, and the same constant is in
+ * hemola-frontend/src/i18n/catalog.js — keep the two in step.
+ */
+export const ENGLISH_NAME_FIELD = 'nameEn';
+
 export const DEFAULT_CARGO_TYPES = [
     { id: 'food', name: 'مواد غذائية', category: 'NORMAL' },
     { id: 'electronics', name: 'أجهزة كهربائية', category: 'NORMAL' },
@@ -651,11 +659,19 @@ export const getTruckTypes = async () => {
         code,
         label: saved[code]?.label || TruckTypeAr[code],
         defaultLabel: TruckTypeAr[code],
+        nameEn: saved[code]?.[ENGLISH_NAME_FIELD] || '',
         active: saved[code]?.active !== false,
     }));
 };
 
 export const saveTruckTypes = async (types) => {
-    const items = Object.fromEntries(types.map((t) => [t.code, { label: t.label, active: t.active }]));
+    // The English name is written only when there is one: the backend's
+    // rules for config/truckTypes refuse any field they don't list, so an
+    // entry without it saves exactly as before.
+    const items = Object.fromEntries(types.map((t) => [t.code, {
+        label: t.label,
+        active: t.active,
+        ...(t.nameEn?.trim() ? { [ENGLISH_NAME_FIELD]: t.nameEn.trim() } : {}),
+    }]));
     await setDoc(doc(db, 'config', 'truckTypes'), { items, updatedAt: serverTimestamp() });
 };
