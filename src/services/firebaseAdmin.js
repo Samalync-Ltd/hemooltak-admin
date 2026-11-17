@@ -635,6 +635,14 @@ export const savePlatformContent = async (field, value) => {
  */
 export const ENGLISH_NAME_FIELD = 'nameEn';
 
+/**
+ * Saving the English name waits for the backend: switch this to true once
+ * Nancy confirms the nameEn change (backend PR #16 — rules that accept nameEn
+ * on truck types) is deployed. Until then the field is shown but locked, and
+ * nothing new is written.
+ */
+export const ENGLISH_NAMES_SAVING_ENABLED = false;
+
 export const DEFAULT_CARGO_TYPES = [
     { id: 'food', name: 'مواد غذائية', category: 'NORMAL' },
     { id: 'electronics', name: 'أجهزة كهربائية', category: 'NORMAL' },

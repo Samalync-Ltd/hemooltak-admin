@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
-import { getTruckTypes, saveTruckTypes, toArabicError } from '../../../services/firebaseAdmin';
+import { getTruckTypes, saveTruckTypes, toArabicError, ENGLISH_NAMES_SAVING_ENABLED } from '../../../services/firebaseAdmin';
 import { SkeletonRows } from '../../../components/common/Loader';
 
 /**
@@ -88,7 +88,8 @@ export const TruckTypes = () => {
               <Input label="الاسم الظاهر" value={labelDraft} onChange={(e) => setLabelDraft(e.target.value)} />
             </div>
             <div style={{ flex: 1, minWidth: 200 }}>
-              <Input label="الاسم بالإنجليزية (English name)" value={nameEnDraft} onChange={(e) => setNameEnDraft(e.target.value)} placeholder="e.g. Flatbed" dir="ltr" style={{ textAlign: 'left' }} />
+              <Input label="الاسم بالإنجليزية (English name)" value={nameEnDraft} onChange={(e) => setNameEnDraft(e.target.value)} placeholder="e.g. Flatbed" dir="ltr" style={{ textAlign: 'left' }} disabled={!ENGLISH_NAMES_SAVING_ENABLED} />
+              {!ENGLISH_NAMES_SAVING_ENABLED && <div className="text-helper" style={{ fontSize: 12, marginTop: -8 }}>يُفعّل حفظ الاسم الإنجليزي بعد تأكيد نشر تحديث الخادم.</div>}
             </div>
             <Button type="submit" variant="primary" isLoading={saving}>{saving ? 'جاري الحفظ' : 'حفظ'}</Button>
             <Button type="button" variant="outline" onClick={() => setEditingCode(null)}>إلغاء</Button>

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
-import { getCargoTypes, saveCargoTypes, toArabicError, ENGLISH_NAME_FIELD } from '../../../services/firebaseAdmin';
+import { getCargoTypes, saveCargoTypes, toArabicError, ENGLISH_NAME_FIELD, ENGLISH_NAMES_SAVING_ENABLED } from '../../../services/firebaseAdmin';
 import { SkeletonRows } from '../../../components/common/Loader';
 
 const CARGO_CATEGORY = { NORMAL: 'NORMAL', SPECIAL_CONDITIONS: 'SPECIAL_CONDITIONS', HIGH_RISK: 'HIGH_RISK' };
@@ -139,7 +139,9 @@ export const CargoTypes = () => {
                 placeholder="e.g. Electronics"
                 dir="ltr"
                 style={{ textAlign: 'left' }}
+                disabled={!ENGLISH_NAMES_SAVING_ENABLED}
               />
+              {!ENGLISH_NAMES_SAVING_ENABLED && <div className="text-helper" style={{ fontSize: 12, marginTop: -8 }}>يُفعّل حفظ الاسم الإنجليزي بعد تأكيد نشر تحديث الخادم.</div>}
             </div>
             <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <label style={{ fontSize: 14, fontWeight: 600 }}>الفئة</label>
