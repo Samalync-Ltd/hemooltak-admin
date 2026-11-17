@@ -657,7 +657,6 @@ export const getSavedCargoTypes = async () => {
 };
 
 export const getCargoTypes = async () => (await getSavedCargoTypes()) ?? DEFAULT_CARGO_TYPES;
-};
 
 export const saveCargoTypes = async (items) => {
     await setDoc(doc(db, 'config', 'cargoTypes'), { items, updatedAt: serverTimestamp() });
