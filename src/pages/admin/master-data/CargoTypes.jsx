@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
-import { getCargoTypes, saveCargoTypes, toArabicError, ENGLISH_NAME_FIELD, ENGLISH_NAMES_SAVING_ENABLED } from '../../../services/firebaseAdmin';
+import { getSavedCargoTypes, DEFAULT_CARGO_TYPES, saveCargoTypes, toArabicError, ENGLISH_NAME_FIELD, ENGLISH_NAMES_SAVING_ENABLED } from '../../../services/firebaseAdmin';
 import { SkeletonRows } from '../../../components/common/Loader';
 
 const CARGO_CATEGORY = { NORMAL: 'NORMAL', SPECIAL_CONDITIONS: 'SPECIAL_CONDITIONS', HIGH_RISK: 'HIGH_RISK' };
@@ -39,13 +39,18 @@ export const CargoTypes = () => {
   const [editingId, setEditingId] = useState(null);
   const [typeName, setTypeName] = useState('');
   const [typeNameEn, setTypeNameEn] = useState('');
+  // false while config/cargoTypes has never been saved: the backend then
+  // refuses every new shipment (PLATFORM_NOT_CONFIGURED).
+  const [isSaved, setIsSaved] = useState(true);
   const [typeCategory, setTypeCategory] = useState(CARGO_CATEGORY.NORMAL);
 
   const loadTypes = async () => {
     setLoading(true);
     setError('');
     try {
-      setCargoTypes(await getCargoTypes());
+      const saved = await getSavedCargoTypes();
+      setIsSaved(saved !== null);
+      setCargoTypes(saved ?? DEFAULT_CARGO_TYPES);
     } catch (err) {
       console.error(err);
       setError(toArabicError(err));
@@ -61,6 +66,7 @@ export const CargoTypes = () => {
     try {
       await saveCargoTypes(next);
       setCargoTypes(next);
+      setIsSaved(true);
       return true;
     } catch (err) {
       alert(toArabicError(err));
@@ -118,6 +124,13 @@ export const CargoTypes = () => {
         <h2 style={{ margin: 0 }}>إدارة أنواع البضائع</h2>
         <Button variant="primary" onClick={handleOpenAdd} isLoading={saving}>+ إضافة نوع جديد</Button>
       </div>
+
+      {!loading && !isSaved && (
+        <div role="alert" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap', padding: '14px 18px', borderRadius: 8, backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid var(--color-error)', color: 'var(--color-error)' }}>
+          <span style={{ fontWeight: 600 }}>قائمة أنواع البضائع لم تُحفظ بعد — لا يمكن للشاحنين نشر أي شحنة حتى تُحفظ. الأنواع أدناه مقترحة فقط.</span>
+          <Button variant="primary" isLoading={saving} onClick={() => persist(cargoTypes)}>حفظ القائمة الآن</Button>
+        </div>
+      )}
 
       {showForm && (
         <Card>

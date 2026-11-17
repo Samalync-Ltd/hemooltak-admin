@@ -650,9 +650,13 @@ export const DEFAULT_CARGO_TYPES = [
     { id: 'general', name: 'بضائع عامة', category: 'NORMAL' },
 ];
 
-export const getCargoTypes = async () => {
+/** The saved list, or null when none has been saved yet (then nobody can post a shipment). */
+export const getSavedCargoTypes = async () => {
     const snap = await getDoc(doc(db, 'config', 'cargoTypes'));
-    return snap.exists() && Array.isArray(snap.data().items) ? snap.data().items : DEFAULT_CARGO_TYPES;
+    return snap.exists() && Array.isArray(snap.data().items) ? snap.data().items : null;
+};
+
+export const getCargoTypes = async () => (await getSavedCargoTypes()) ?? DEFAULT_CARGO_TYPES;
 };
 
 export const saveCargoTypes = async (items) => {
