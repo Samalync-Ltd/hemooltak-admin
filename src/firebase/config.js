@@ -15,6 +15,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+// Any Firebase auth email sent from the dashboard goes out in Arabic. (The
+// dashboard sends none today — admins only sign in — but this keeps it so.)
+auth.languageCode = 'ar';
 export const db = getFirestore(app);
 
 // Every Cloud Function in hemooltak-backend runs in me-central1 (Doha) —
