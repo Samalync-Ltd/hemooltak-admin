@@ -41,6 +41,8 @@ const REASON_MESSAGES = {
         ? `حمولة الشاحنة (${capacityTons} طن) أقل من وزن الشحنة (${weight} طن).`
         : 'حمولة الشاحنة أقل من وزن الشحنة.'),
     TRUCK_NOT_APPROVED: () => 'مستندات الشاحنة لم تُعتمد بعد.',
+    TRUCK_TYPE_DISABLED: () => 'هذا النوع من الشاحنات غير متاح حالياً. اختر نوعاً آخر.',
+    TOPUP_DISABLED: () => 'شحن المحفظة متوقف حالياً — أضف الرصيد من صفحة الحساب (إضافة رصيد تجريبي).',
     INSUFFICIENT_BALANCE: ({ availableBalance, required, requested }) => {
         const needed = required ?? requested;
         return availableBalance != null && needed != null
@@ -334,10 +336,9 @@ export const processWithdrawal = async (withdrawalId, decision, reason) =>
     (await call('processWithdrawal')({ withdrawalId, decision, ...(reason ? { reason } : {}) })).data;
 
 // --- Commission config (config/platform) -------------------------------
-// Readable by any signed-in user, writable by admins only (firestore.rules
-// §config) — this is a direct Firestore write, not a Cloud Function; there
-// is no dedicated function for it (README.md, "config/platform must be
-// seeded before money can move").
+// Readable by any signed-in user. The commission itself changes ONLY through
+// setCommissionPercent (INTEGRATION.md §12): the rules refuse a direct write
+// of commissionPercent, even by an admin.
 export const getCommissionConfig = async () => {
     const snap = await getDoc(doc(db, 'config', 'platform'));
     if (!snap.exists()) return { commissionPercent: null, warningThreshold: 3 };
@@ -345,13 +346,44 @@ export const getCommissionConfig = async () => {
     return { commissionPercent: data.commissionPercent ?? null, warningThreshold: data.warningThreshold ?? 3 };
 };
 
-/** Writes only the fields passed — leaving one out keeps whatever is already in config/platform. */
-export const setCommissionConfig = async ({ commissionPercent, warningThreshold }) => {
-    const updates = {};
-    if (commissionPercent !== undefined) updates.commissionPercent = commissionPercent;
-    if (warningThreshold !== undefined) updates.warningThreshold = warningThreshold;
-    await setDoc(doc(db, 'config', 'platform'), updates, { merge: true });
+// The backend's own refusals for setCommissionPercent, in Arabic.
+const COMMISSION_REFUSALS = [
+    [/0 to 100/, 'النسبة يجب أن تكون رقماً من 0 إلى 100.'],
+    [/2 decimal/, 'النسبة تقبل خانتين عشريتين كحد أقصى.'],
+];
+
+/**
+ * The only way to change the commission (INTEGRATION.md §12). The backend
+ * saves the rate and a history record; the new rate applies only to offers
+ * accepted after the change. Resolves { commissionPercent, previousPercent }.
+ */
+export const setCommissionPercent = async (value) => {
+    try {
+        return (await call('setCommissionPercent')({ value })).data;
+    } catch (err) {
+        const refusal = (err?.code === 'functions/invalid-argument')
+            && COMMISSION_REFUSALS.find(([pattern]) => pattern.test(err.message || ''));
+        if (refusal) throw new Error(refusal[1]);
+        throw err;
+    }
 };
+
+// --- Test balance (adminAddBalance) --------------------------------------
+// Self top-up is switched off until a payment gateway exists (TOPUP_DISABLED);
+// an admin adds balance for testing. Debt is paid off first (INTEGRATION.md §12).
+
+/** wallets/{uid} — readable by its owner and admins. */
+export const getWallet = async (uid) => {
+    const snap = await getDoc(doc(db, 'wallets', uid));
+    const data = snap.exists() ? snap.data() : {};
+    const totalBalance = data.totalBalance ?? 0;
+    const reservedAmount = data.reservedAmount ?? 0;
+    return { totalBalance, reservedAmount, availableBalance: totalBalance - reservedAmount };
+};
+
+/** Resolves { amount, appliedToDebt, credited, remainingDebt, totalBalance, reservedAmount, availableBalance }. */
+export const adminAddBalance = async (uid, amount, note) =>
+    (await call('adminAddBalance')({ uid, amount, note })).data;
 
 // --- Commission report ---------------------------------------------------
 // There is no dedicated "commission report" collection or function in

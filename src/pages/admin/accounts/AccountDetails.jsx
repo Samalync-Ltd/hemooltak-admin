@@ -9,6 +9,7 @@ import {
   approveTruckDocument, rejectTruckDocument,
   toArabicError,
 } from '../../../services/firebaseAdmin';
+import { TestBalanceCard } from './TestBalanceCard';
 import { AccountStatus, AccountDocumentType, DocumentStatus, AccountDocumentTypeAr, TruckTypeAr, RequiredDocuments } from '../../../constants/enums';
 import { Loader } from '../../../components/common/Loader';
 
@@ -459,6 +460,8 @@ export const AccountDetails = () => {
           )}
         </Card>
       )}
+      {/* Test balance: self top-up is off until online payment exists. */}
+      {(account.type === 'SHIPPER' || account.type === 'CARRIER') && <TestBalanceCard uid={account.id} />}
     </div>
   );
 };

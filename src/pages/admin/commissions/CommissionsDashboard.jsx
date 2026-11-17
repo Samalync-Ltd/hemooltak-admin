@@ -4,7 +4,7 @@ import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
 import {
   getCommissionConfig,
-  setCommissionConfig,
+  setCommissionPercent,
   getCommissionReport,
   getWithdrawals,
   processWithdrawal, toArabicError } from '../../../services/firebaseAdmin';
@@ -90,9 +90,10 @@ export const CommissionsDashboard = () => {
 
     setBusy(true);
     try {
-      await setCommissionConfig({ commissionPercent: newRate });
-      setRate(newRate);
-      alert('تم تحديث نسبة العمولة بنجاح. بدون هذه النسبة لا يمكن تسوية أي رحلة أو إلغاء بعد الإسناد.');
+      const result = await setCommissionPercent(newRate);
+      setRate(result?.commissionPercent ?? newRate);
+      setTempRate(String(result?.commissionPercent ?? newRate));
+      alert('تم تحديث نسبة العمولة بنجاح. النسبة الجديدة تُطبّق على الرحلات التي يُتفق عليها بعد التغيير.');
     } catch (err) {
       alert(toArabicError(err));
     } finally {
@@ -154,8 +155,8 @@ export const CommissionsDashboard = () => {
         <Card>
           <h3 style={{ marginBottom: 16 }}>إعدادات نسبة العمولة</h3>
           <p className="text-helper" style={{ marginBottom: 24 }}>
-            هذه النسبة (config/platform.commissionPercent) تُستخدم لكل من تسوية الرحلات وعمولة الإلغاء بعد الإسناد.
-            {rate == null && ' — لم يتم ضبطها بعد: كل تسوية وإلغاء بعد الإسناد سيفشل حتى تُحفظ نسبة هنا.'}
+            النسبة الجديدة تُطبّق على الرحلات التي يُتفق عليها بعد التغيير.
+            {rate == null && ' — لم تُضبط نسبة بعد: لا يمكن قبول أي عرض حتى تُحفظ نسبة هنا.'}
           </p>
           <form onSubmit={handleUpdateRate} style={{ display: 'flex', gap: 16, alignItems: 'flex-end' }}>
             <div style={{ flex: 1 }}>
