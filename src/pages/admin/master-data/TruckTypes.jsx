@@ -17,6 +17,7 @@ export const TruckTypes = () => {
   const [error, setError] = useState('');
   const [editingCode, setEditingCode] = useState(null);
   const [labelDraft, setLabelDraft] = useState('');
+  const [nameEnDraft, setNameEnDraft] = useState('');
   const [saving, setSaving] = useState(false);
 
   const loadTypes = async () => {
@@ -51,12 +52,13 @@ export const TruckTypes = () => {
   const handleOpenEdit = (type) => {
     setEditingCode(type.code);
     setLabelDraft(type.label);
+    setNameEnDraft(type.nameEn || '');
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
     if (!labelDraft.trim()) return;
-    const next = truckTypes.map(t => (t.code === editingCode ? { ...t, label: labelDraft.trim() } : t));
+    const next = truckTypes.map(t => (t.code === editingCode ? { ...t, label: labelDraft.trim(), nameEn: nameEnDraft.trim() } : t));
     if (await persist(next)) setEditingCode(null);
   };
 
@@ -74,16 +76,19 @@ export const TruckTypes = () => {
       <Card>
         <p className="text-helper" style={{ margin: 0, lineHeight: 1.8 }}>
           أنواع الشاحنات ثابتة في النظام ويتحقق منها الخادم عند إنشاء الشحنات وتقديم العروض، لذلك لا يمكن إضافة نوع جديد أو حذفه.
-          يمكنك تعديل الاسم الظاهر للمستخدمين، وإيقاف النوع ليختفي من خيارات الشحنات الجديدة.
+          يمكنك تعديل الاسم الظاهر للمستخدمين (بالعربية والإنجليزية)، وإيقاف النوع ليختفي من خيارات الشحنات الجديدة. إن تُرك الاسم الإنجليزي فارغاً يظهر في الموقع الإنجليزي الاسم العربي.
         </p>
       </Card>
 
       {editingCode && (
         <Card>
           <h3 style={{ marginBottom: 16 }}>تعديل اسم النوع ({editingCode})</h3>
-          <form onSubmit={handleSave} style={{ display: 'flex', gap: 16, alignItems: 'flex-end' }}>
-            <div style={{ flex: 1 }}>
+          <form onSubmit={handleSave} style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-end' }}>
+            <div style={{ flex: 1, minWidth: 200 }}>
               <Input label="الاسم الظاهر" value={labelDraft} onChange={(e) => setLabelDraft(e.target.value)} />
+            </div>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <Input label="الاسم بالإنجليزية (English name)" value={nameEnDraft} onChange={(e) => setNameEnDraft(e.target.value)} placeholder="e.g. Flatbed" dir="ltr" style={{ textAlign: 'left' }} />
             </div>
             <Button type="submit" variant="primary" isLoading={saving}>{saving ? 'جاري الحفظ' : 'حفظ'}</Button>
             <Button type="button" variant="outline" onClick={() => setEditingCode(null)}>إلغاء</Button>
@@ -93,7 +98,7 @@ export const TruckTypes = () => {
 
       <Card>
         {loading ? (
-          <SkeletonRows rows={7} columns={3} label="جاري تحميل أنواع الشاحنات" />
+          <SkeletonRows rows={7} columns={4} label="جاري تحميل أنواع الشاحنات" />
         ) : error ? (
           <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-error)' }}>{error}</div>
         ) : (
@@ -103,6 +108,7 @@ export const TruckTypes = () => {
                 <tr style={{ borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: 14 }}>
                   <th style={{ padding: '12px 16px', width: '160px' }}>الرمز</th>
                   <th style={{ padding: '12px 16px' }}>الاسم الظاهر</th>
+                  <th style={{ padding: '12px 16px' }}>الاسم بالإنجليزية</th>
                   <th style={{ padding: '12px 16px' }}>الحالة</th>
                   <th style={{ padding: '12px 16px', width: '220px' }}>الإجراءات</th>
                 </tr>
@@ -114,6 +120,9 @@ export const TruckTypes = () => {
                     <td style={{ padding: '16px', fontWeight: 600 }}>
                       {type.label}
                       {type.label !== type.defaultLabel && <span className="text-helper" style={{ fontWeight: 400 }}> (الافتراضي: {type.defaultLabel})</span>}
+                    </td>
+                    <td style={{ padding: '16px' }} dir="ltr">
+                      {type.nameEn || <span className="text-helper">—</span>}
                     </td>
                     <td style={{ padding: '16px' }}>
                       {type.active

@@ -60,7 +60,7 @@ export const ShipmentDetails = () => {
               <Field label="المسار">{shipment.pickupCity} &larr; {shipment.deliveryCity}</Field>
               <Field label="موعد التحميل">{fmt(shipment.loadingDate)}</Field>
               <Field label="نوع الشاحنة المطلوبة">{TruckTypeAr[shipment.requiredTruckType] || shipment.requiredTruckType}</Field>
-              <Field label="نوع البضاعة">{shipment.cargoType}</Field>
+              <Field label="نوع البضاعة">{shipment.cargoTypeName || shipment.cargoType}</Field>
               <Field label="الوزن">{shipment.weight} طن</Field>
               <Field label="السعر المقترح">{shipment.suggestedPrice} ر.س</Field>
               {shipment.description && <Field label="الوصف">{shipment.description}</Field>}

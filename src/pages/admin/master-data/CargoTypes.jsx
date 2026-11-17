@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
-import { getCargoTypes, saveCargoTypes, toArabicError } from '../../../services/firebaseAdmin';
+import { getCargoTypes, saveCargoTypes, toArabicError, ENGLISH_NAME_FIELD } from '../../../services/firebaseAdmin';
 import { SkeletonRows } from '../../../components/common/Loader';
 
 const CARGO_CATEGORY = { NORMAL: 'NORMAL', SPECIAL_CONDITIONS: 'SPECIAL_CONDITIONS', HIGH_RISK: 'HIGH_RISK' };
@@ -24,8 +24,10 @@ const newId = () => `c${Date.now().toString(36)}`;
 /**
  * The list shippers pick from when posting a shipment, stored in
  * config/cargoTypes (admin-writable, readable by every signed-in user).
- * The backend stores `cargoType` as free text, so removing a type here
- * never breaks existing shipments — it only stops it being offered.
+ * createShipment accepts only an id from this list, and copies the type's
+ * name onto the shipment — so removing or renaming a type here never changes
+ * existing shipments, it only changes what new ones can pick
+ * (INTEGRATION.md §9). The English name is what the website shows in English.
  */
 export const CargoTypes = () => {
   const [cargoTypes, setCargoTypes] = useState([]);
@@ -36,6 +38,7 @@ export const CargoTypes = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [typeName, setTypeName] = useState('');
+  const [typeNameEn, setTypeNameEn] = useState('');
   const [typeCategory, setTypeCategory] = useState(CARGO_CATEGORY.NORMAL);
 
   const loadTypes = async () => {
@@ -70,6 +73,7 @@ export const CargoTypes = () => {
   const handleOpenAdd = () => {
     setEditingId(null);
     setTypeName('');
+    setTypeNameEn('');
     setTypeCategory(CARGO_CATEGORY.NORMAL);
     setShowForm(true);
   };
@@ -77,6 +81,7 @@ export const CargoTypes = () => {
   const handleOpenEdit = (type) => {
     setEditingId(type.id);
     setTypeName(type.name);
+    setTypeNameEn(type[ENGLISH_NAME_FIELD] || '');
     setTypeCategory(type.category || CARGO_CATEGORY.NORMAL);
     setShowForm(true);
   };
@@ -84,18 +89,21 @@ export const CargoTypes = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     const name = typeName.trim();
+    const nameEn = typeNameEn.trim();
     if (!name) return;
-    if (name === 'أخرى') {
-      alert('"أخرى" خيار ثابت يظهر دائماً للشاحن ولا يحتاج إلى إضافة');
-      return;
-    }
     if (cargoTypes.some(t => t.name === name && t.id !== editingId)) {
       alert('هذا النوع موجود مسبقاً');
       return;
     }
+    // Only types in this list can be posted (the backend refuses anything
+    // else), so «أخرى» is added here like any other type if it is wanted.
+    const withEnglish = (type) => {
+      const { [ENGLISH_NAME_FIELD]: _previous, ...rest } = type;
+      return nameEn ? { ...rest, [ENGLISH_NAME_FIELD]: nameEn } : rest;
+    };
     const next = editingId
-      ? cargoTypes.map(t => (t.id === editingId ? { ...t, name, category: typeCategory } : t))
-      : [...cargoTypes, { id: newId(), name, category: typeCategory }];
+      ? cargoTypes.map(t => (t.id === editingId ? withEnglish({ ...t, name, category: typeCategory }) : t))
+      : [...cargoTypes, withEnglish({ id: newId(), name, category: typeCategory })];
     if (await persist(next)) setShowForm(false);
   };
 
@@ -121,6 +129,16 @@ export const CargoTypes = () => {
                 value={typeName}
                 onChange={(e) => setTypeName(e.target.value)}
                 placeholder="مثال: إلكترونيات، مواد غذائية..."
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <Input
+                label="الاسم بالإنجليزية (English name)"
+                value={typeNameEn}
+                onChange={(e) => setTypeNameEn(e.target.value)}
+                placeholder="e.g. Electronics"
+                dir="ltr"
+                style={{ textAlign: 'left' }}
               />
             </div>
             <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -150,12 +168,12 @@ export const CargoTypes = () => {
 
       <Card>
         {loading ? (
-          <SkeletonRows rows={5} columns={3} label="جاري تحميل أنواع البضائع" />
+          <SkeletonRows rows={5} columns={4} label="جاري تحميل أنواع البضائع" />
         ) : error ? (
           <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-error)' }}>{error}</div>
         ) : cargoTypes.length === 0 ? (
           <div style={{ padding: 48, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-            لا توجد أنواع — سيظهر للشاحن خيار "أخرى" فقط
+            لا توجد أنواع — لن يتمكن الشاحنون من نشر أي شحنة حتى تُضاف الأنواع
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -163,6 +181,7 @@ export const CargoTypes = () => {
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: 14 }}>
                   <th style={{ padding: '12px 16px' }}>اسم النوع</th>
+                  <th style={{ padding: '12px 16px' }}>الاسم بالإنجليزية</th>
                   <th style={{ padding: '12px 16px' }}>الفئة</th>
                   <th style={{ padding: '12px 16px', width: '200px' }}>الإجراءات</th>
                 </tr>
@@ -173,6 +192,9 @@ export const CargoTypes = () => {
                   return (
                     <tr key={type.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                       <td style={{ padding: '16px', fontWeight: 600 }}>{type.name}</td>
+                      <td style={{ padding: '16px' }} dir="ltr">
+                        {type[ENGLISH_NAME_FIELD] || <span className="text-helper">—</span>}
+                      </td>
                       <td style={{ padding: '16px' }}>
                         <span style={{ padding: '4px 8px', borderRadius: 4, fontSize: 13, backgroundColor: colors.bg, color: colors.fg }}>
                           {categoryLabel[type.category] || categoryLabel[CARGO_CATEGORY.NORMAL]}
