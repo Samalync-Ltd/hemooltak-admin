@@ -113,6 +113,20 @@ export const CargoTypes = () => {
     if (await persist(next)) setShowForm(false);
   };
 
+  // Switched off (active: false) = no longer offered for new shipments; the
+  // type stays in the list and existing shipments keep it. A type without
+  // the field counts as on. (The backend doesn't check this yet — the website
+  // hides switched-off types from the shipment form.)
+  const handleToggle = async (type) => {
+    const isActive = type.active !== false;
+    if (isActive && !window.confirm(`إيقاف "${type.name}" يخفيه من خيارات الشحنات الجديدة. الشحنات الحالية لا تتأثر. متابعة؟`)) return;
+    await persist(cargoTypes.map(t => {
+      if (t.id !== type.id) return t;
+      const { active: _active, ...rest } = t;
+      return isActive ? { ...rest, active: false } : rest;
+    }));
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف نوع البضاعة هذا؟ الشحنات الحالية لن تتأثر.')) return;
     await persist(cargoTypes.filter(t => t.id !== id));
@@ -183,7 +197,7 @@ export const CargoTypes = () => {
 
       <Card>
         {loading ? (
-          <SkeletonRows rows={5} columns={4} label="جاري تحميل أنواع البضائع" />
+          <SkeletonRows rows={5} columns={5} label="جاري تحميل أنواع البضائع" />
         ) : error ? (
           <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-error)' }}>{error}</div>
         ) : cargoTypes.length === 0 ? (
@@ -198,14 +212,15 @@ export const CargoTypes = () => {
                   <th style={{ padding: '12px 16px' }}>اسم النوع</th>
                   <th style={{ padding: '12px 16px' }}>الاسم بالإنجليزية</th>
                   <th style={{ padding: '12px 16px' }}>الفئة</th>
-                  <th style={{ padding: '12px 16px', width: '200px' }}>الإجراءات</th>
+                  <th style={{ padding: '12px 16px' }}>الحالة</th>
+                  <th style={{ padding: '12px 16px', width: '260px' }}>الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
                 {cargoTypes.map(type => {
                   const colors = categoryColors[type.category] || categoryColors[CARGO_CATEGORY.NORMAL];
                   return (
-                    <tr key={type.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    <tr key={type.id} style={{ borderBottom: '1px solid var(--color-border)', opacity: type.active === false ? 0.6 : 1 }}>
                       <td style={{ padding: '16px', fontWeight: 600 }}>{type.name}</td>
                       <td style={{ padding: '16px' }} dir="ltr">
                         {type[ENGLISH_NAME_FIELD] || <span className="text-helper">—</span>}
@@ -216,8 +231,14 @@ export const CargoTypes = () => {
                         </span>
                       </td>
                       <td style={{ padding: '16px' }}>
+                        {type.active === false
+                          ? <span style={{ color: 'var(--color-text-muted)' }}>موقوف</span>
+                          : <span style={{ color: 'var(--color-success)' }}>مفعّل</span>}
+                      </td>
+                      <td style={{ padding: '16px' }}>
                         <div style={{ display: 'flex', gap: 8 }}>
                           <Button variant="outline" onClick={() => handleOpenEdit(type)} isLoading={saving}>تعديل</Button>
+                          <Button variant="outline" onClick={() => handleToggle(type)} isLoading={saving}>{type.active === false ? 'تفعيل' : 'إيقاف'}</Button>
                           <Button style={{ color: 'var(--color-error)' }} onClick={() => handleDelete(type.id)} isLoading={saving}>حذف</Button>
                         </div>
                       </td>
